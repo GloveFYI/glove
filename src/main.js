@@ -1,4 +1,10 @@
-import { createApp } from 'vue'
-import App from './App.vue'
+import App from './App.svelte';
 
-createApp(App).mount('#app')
+const app = new App({
+	target: document.body,
+	props: {
+		name: 'glove'
+	}
+});
+
+export default app;

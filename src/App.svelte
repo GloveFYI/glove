@@ -1,0 +1,1053 @@
+<script>
+  import { onMount } from "svelte";
+  import moment from "moment";
+  import _ from "lodash";
+  import { ethers } from "ethers";
+  import etherscanApi from "etherscan-api";
+
+  const MAINNET = "";
+  const WETH_CONTRACT_ADDRESS = "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2";
+  const YEK = "YWE7CYXT15F5VBY9RQFV188JCXPQZ1M3GC";
+
+  const NETWORK = {
+    ETHEREUM_MAINNET: "ethereum",
+    BSC_MAINNET: "bsc",
+    POLYGON_MAINNET: "polygon",
+  };
+
+  function makeApi({ baseUrl, baseHeader = {} }) {
+    return (endpoint, query) => {
+      var querystring = "";
+      if (query) {
+        querystring = "?";
+        Object.keys(query).forEach((key) => {
+          querystring += `${key}=${query[key]}&`;
+        });
+      }
+      const options = {
+        headers: baseHeader,
+      };
+      return fetch(`${baseUrl}${endpoint}${querystring}`, options).then((res) =>
+        res.json()
+      );
+    };
+  }
+
+  function timeout(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  // clients
+
+  let apiCoingecko;
+  let apiDeepIndex;
+  let apiZeroX;
+  let apiGas;
+  let web3;
+  let etherscan = null;
+  let loading = true;
+  let hideBalances = false;
+  let lightMode = true;
+  let filterMaxTrx = 10;
+  let filterActiveOnly = true;
+  let filterHideZeroValue = true;
+  let keys = {
+    etherscan: "",
+  };
+
+  // data
+
+  let coingeckoList = [];
+  let gasPrice = 0;
+  let gasPriceUsd = 0;
+  let ethPrice = 0;
+  let ethAddress = "";
+  let balance = 0;
+
+  let filteredTable = [];
+  let ethTxs = [];
+  let tokenTransfers = [];
+  let tokensMetadata = [];
+  let tokenTxsMap = [];
+  let tokenTxsRaw = {};
+  let tokenTxsPrices = {};
+  let tokenMarket = {};
+
+  let purchasePriceFallback =
+    JSON.parse(localStorage.getItem("PRICE_FALLBACK")) || {};
+
+  // methods
+
+  async function multichainFetch(endpoint, query = {}) {
+    let result = [];
+
+    await timeout(50);
+
+    try {
+      const [ethhTxs, bscTxs, polygonTxs] = await Promise.all([
+        apiDeepIndex(endpoint, { ...query, chain: NETWORK.ETHEREUM_MAINNET }),
+        apiDeepIndex(endpoint, { ...query, chain: NETWORK.BSC_MAINNET }),
+        apiDeepIndex(endpoint, { ...query, chain: NETWORK.POLYGON_MAINNET }),
+      ]);
+
+      result = [
+        ...ethhTxs.result.map((x) => ({
+          ...x,
+          network: NETWORK.ETHEREUM_MAINNET,
+        })),
+        ...bscTxs.result.map((x) => ({ ...x, network: "bsc" })),
+        ...polygonTxs.result.map((x) => ({ ...x, network: "polygon" })),
+      ];
+    } catch (e) {
+      result = [];
+    }
+
+    return result;
+  }
+
+  async function fetchTransfers() {
+    let result = await web3.eth.getPastLogs({
+      fromBlock: 0,
+      toBlock: "latest",
+      address: ethAddress,
+      topics: [],
+    });
+    return result;
+  }
+
+  function handleEtherscanKey(event) {
+    const which = event.submitter.id;
+    let key = "";
+    if (which === "dev_key") {
+      key = YEK;
+    } else {
+      key = event.target.querySelector("[name='etherscan-key']").value;
+    }
+    localStorage.setItem("ETHERSCAN_KEY", key);
+    etherscan = etherscanApi.init(key);
+  }
+
+  async function handleEthAddress(event) {
+    ethAddress = event.target.querySelector("[name='eth-address']").value;
+    // let balance = await web3.eth.getBalance(ethAddress);
+    // balance = web3.utils.fromWei(balance, 'ether');
+    let balance = await etherscan.account.balance(ethAddress, "latest");
+    balance = ethers.utils.formatEther(balance.result);
+
+    let _ethTxs = await etherscan.account.txlist(
+      ethAddress,
+      1,
+      "latest",
+      1,
+      1000,
+      "asc"
+    );
+    ethTxs = _ethTxs.result;
+
+    //// refactor zone start
+
+    // nativeTxs = await multichainFetch(`${ethAddress}`);
+    // tokenTransfers = await multichainFetch(`${ethAddress}/erc20/transfers`);
+
+    // // merge the above to create a sensible gravy
+
+    // // get unique contract addresses from tokenTransfers
+
+    // const contractAddresses = tokenTransfers.map(x => x.address);
+
+    // tokensMetadata = await multichainFetch(`erc20/metadata`, {
+    //   addresses: contractAddresses.join(",")
+    // });
+
+    //// refactor zone end
+
+    let tokenTxs = await etherscan.account.tokentx(
+      ethAddress,
+      undefined,
+      1,
+      "latest",
+      "asc"
+    );
+
+    tokenTxs.result = tokenTxs.result.filter(
+      (tx) => tx.contractAddress !== WETH_CONTRACT_ADDRESS
+    );
+
+    tokenTxsMap = tokenTxs.result.map((x) => ({
+      ...x,
+      platform: "ethereum",
+    }));
+
+    // @todo tokenTxRaw keys to be contract Address instead of symbol
+
+    let _tokenTxsRaw = _.groupBy([...tokenTxs.result], (tx) => {
+      console.log("tokenTxRawLatest", tx);
+      // tx.contactAddress
+      return tx.tokenSymbol;
+    });
+    _tokenTxsRaw = _.mapValues(_tokenTxsRaw, function (txs) {
+      return _.sortBy(txs, [
+        function (o) {
+          return Number(o.timeStamp);
+        },
+      ]).reverse();
+    });
+    _tokenTxsRaw = _.mapKeys(_tokenTxsRaw, function (value, key) {
+      return key.toUpperCase();
+    });
+
+    tokenTxsRaw = _tokenTxsRaw;
+  }
+
+  async function handleTrackContract() {
+    // const web3 = web3;
+  }
+
+  function addToWatchlist(symbol) {
+    window.localStorage.setItem("", symbol);
+  }
+
+  function toFormattedDate(timestamp) {
+    return moment.unix(timestamp).format("YY-MM-DD");
+  }
+
+  function toFormattedUsd(amount, decimals = 2) {
+    return "$ " + Number(amount).toFixed(decimals);
+  }
+
+  function toFormattedPercent(number) {
+    if (!_.isFinite(number)) {
+      return "∞";
+    }
+    return number.toFixed(2) + " %";
+  }
+
+  function toFormattedRoi(roi) {
+    if (isNaN(roi)) return "0.00 %";
+    if (!isFinite(roi)) return "∞";
+    return roi > 100
+      ? ((roi + 100) / 100).toFixed(2) + " X"
+      : roi.toFixed(2) + " %";
+  }
+
+  function mask(value) {
+    return hideBalances ? "********" : value;
+  }
+
+  async function fetchCoingeckoList() {
+    let res = await apiCoingecko("coins/list", {
+      include_platform: true,
+    });
+    console.log("fetchCoingeckoList", res);
+    coingeckoList = res;
+  }
+
+  async function fetchEthPrices() {
+    ethPrice = (await apiCoingecko("coins/ethereum")).market_data.current_price
+      .usd;
+    gasPrice = (await apiGas()).fast / 10;
+  }
+
+  async function fetchTokenPrice({ id, startTime, endTime }) {
+    if (!id) return {};
+    await timeout(200);
+    let res = await apiCoingecko(`coins/${id}/market_chart/range`, {
+      vs_currency: "usd",
+      from: startTime,
+      to: endTime,
+    });
+    return res;
+  }
+
+  async function fetchMarkets() {
+    const ids = Object.values(tokens)
+      .map((token) => token.cgId)
+      .join(",");
+    let res = await apiCoingecko("coins/markets", {
+      ids,
+      vs_currency: "usd",
+    });
+    return res;
+  }
+
+  $: assets =
+    tokenTransfers &&
+    (() => {
+      if (!ethAddress || !tokenTransfers || !coingeckoList) {
+        return [];
+      }
+      let assets = [];
+
+      const injectTxToAsset = (tx) => {
+        const matchContract = (asset) => {
+          return Object.values(asset.platforms || {}).includes(tx.address);
+        };
+        let index = assets.findIndex(matchContract);
+        if (index < 0) {
+          const asset = coingeckoList.find(matchContract);
+          index = assets.push({ ...asset, transfers: [] }) - 1;
+        }
+        assets[index].transfers.push({
+          contractAddress: tx.address,
+          hash: tx.transaction_hash,
+          timestamp: Number(tx.block_timestamp),
+          isIn: tx.to_address.toLowerCase() === ethAddress.toLowerCase(),
+          isFree: false,
+          value: Number(tx.value),
+          decimalValue:
+            Number(tx.value) * Math.pow(10, Number(tx.tokenDecimal) * -1),
+        });
+      };
+
+      tokenTransfers.forEach((transfer) => {
+        injectTxToAsset(transfer);
+      });
+
+      return assets;
+    })();
+
+  $: tokens =
+    tokenTxsRaw &&
+    (() => {
+      return _.mapValues(tokenTxsRaw, function (trx) {
+        const oneTrx = trx[0];
+        const cgData =
+          coingeckoList.find((coin) => {
+            return (
+              oneTrx.contractAddress.toLowerCase() === coin.platforms.ethereum
+            );
+          }) || {};
+        return {
+          symbol: oneTrx.tokenSymbol.toUpperCase(),
+          address: oneTrx.contractAddress,
+          decimal: Number(oneTrx.tokenDecimal),
+          cgId: cgData.id || "",
+          name: cgData.name || oneTrx.tokenName,
+        };
+      });
+    })();
+
+  $: tokenTxs =
+    tokenTxsRaw &&
+    (() => {
+      if (!ethAddress) return {};
+      return _.mapValues(tokenTxsRaw, function (trx) {
+        return trx.map((oneTrx) => ({
+          token: oneTrx.tokenSymbol,
+          hash: oneTrx.hash,
+          timestamp: Number(oneTrx.timeStamp),
+          isIn: oneTrx.to.toLowerCase() === ethAddress.toLowerCase(),
+          isFree: false,
+          value: Number(oneTrx.value),
+          decimalValue:
+            Number(oneTrx.value) *
+            Math.pow(10, Number(oneTrx.tokenDecimal) * -1),
+        }));
+      });
+    })();
+
+  $: filtered =
+    tokenTxs &&
+    (() => {
+      return {
+        tokenTxs: _.mapValues(tokenTxs, function (trx) {
+          return _.take(trx, 10);
+        }),
+      };
+    })();
+
+  $: balances =
+    tokenTxs &&
+    (() => {
+      return _.mapValues(tokenTxs, function (txs) {
+        return _.sum(
+          txs.map((tx) => (tx.isIn ? tx.decimalValue : tx.decimalValue * -1))
+        );
+      });
+    })();
+
+  $: dataTable =
+    filtered &&
+    (() => {
+      let dataTable = [];
+      try {
+        dataTable = Object.values(filtered.tokenTxs).map((txs) => {
+          const symbol = txs[0].token.toUpperCase();
+
+          if (txs.length <= 0) {
+            return {
+              name: tokens[symbol] && tokens[symbol].name,
+              symbol,
+              actions: [],
+            };
+          }
+
+          const getTxHist = (tx) =>
+            (tokenTxsPrices[symbol] &&
+              tokenTxsPrices[symbol].find((item) => item.txHash === tx.hash)) ||
+            {};
+
+          const getTxPrice = (tx) => {
+            const txHist = getTxHist(tx);
+            let price;
+            const fallback = purchasePriceFallback[symbol];
+            if (typeof fallback === "number") {
+              price = fallback;
+            } else if (
+              typeof fallback === "object" &&
+              typeof fallback[tx.hash] === "number"
+            ) {
+              price = fallback[tx.hash];
+            } else {
+              price = txHist.price || 0;
+            }
+            return price;
+          };
+
+          const actions = txs.map((tx) => {
+            const txHist = getTxHist(tx);
+            const txPrice = getTxPrice(tx);
+            const txMc = txHist.marketCap || 0;
+            return {
+              tx,
+              class: { in: !!tx.isIn, out: !tx.isIn },
+              time: toFormattedDate(tx.timestamp),
+              symbol: tx.isIn === true ? "+" : "-",
+              price: txPrice.toFixed(3),
+              marketCap: txMc,
+            };
+          });
+          const txValueSet = txs
+            .map((tx) => {
+              const price = getTxPrice(tx);
+              return price ? price * tx.decimalValue * (tx.isIn ? 1 : -1) : 0;
+            })
+            .reverse();
+          console.log(symbol, txValueSet);
+          const alltimeHoldings = _.sum(
+            txs.filter((tx) => tx.isIn).map((tx) => tx.decimalValue)
+          );
+          // const totalInvestment = _.sum(txValueSet.filter(value => value >= 0)); // work this later with rug / airdrop implementations
+          const totalInvestment =
+            _.sum(txValueSet.filter((value) => value > 0)) || 0;
+          const returnValue =
+            _.sum(txValueSet.filter((value) => value < 0)) * -1;
+          // txValueSet.reverse().find(value => value >= 0)
+          // const totalValueOut = -1*(_.sum(txValueSet.filter(value => value < 0)));
+          const totalBalance = balances[symbol] || 0;
+
+          const currentPrice = tokenMarket[symbol]
+            ? tokenMarket[symbol].current_price
+            : 0;
+          const currentMarketCap = tokenMarket[symbol]
+            ? tokenMarket[symbol].market_cap
+            : 0;
+          const fdValuation = tokenMarket[symbol]
+            ? tokenMarket[symbol].fully_diluted_valuation
+            : 0;
+          const totalBalanceValue = totalBalance * currentPrice;
+
+          // const gain = totalValueOut + totalBalanceValue - totalInvestment; // work this later for cumulative roi
+
+          const gain = totalBalanceValue + returnValue - totalInvestment;
+          const unrealGain = alltimeHoldings * currentPrice - totalInvestment;
+          let roi = (gain / totalInvestment) * 100 || 0;
+          // if(!_.isFinite(roi)) {
+          //   roi = 0;
+          // }
+          let unrealRoi = (unrealGain / totalInvestment) * 100 || 0;
+          // if(!_.isFinite(unrealRoi)) {
+          //   unrealRoi = 0;
+          // }
+
+          const currentPriceChange = tokenMarket[symbol]
+            ? tokenMarket[symbol].price_change_percentage_24h
+            : null;
+
+          return {
+            name: tokens[symbol] && tokens[symbol].name,
+            address: tokens[symbol] && tokens[symbol].address,
+            image: tokenMarket[symbol] && tokenMarket[symbol].image,
+            symbol,
+            actions,
+            numbers: {
+              investment: totalInvestment,
+              holdings: totalBalance,
+              alltimeHoldings,
+              currentPrice,
+              currentPriceChange,
+              currentMarketCap,
+              currentValue: totalBalanceValue,
+              liquidValue: totalBalanceValue,
+              fdValuation,
+              returnValue,
+              gain,
+              roi,
+            },
+            investment: totalInvestment.toFixed(5),
+            holdings: totalBalance,
+            roi: toFormattedRoi(roi),
+            unrealRoi: toFormattedRoi(unrealRoi),
+            capRatio: (currentMarketCap / fdValuation) * 100,
+            isGain: roi >= 0,
+            isAirdrop: txValueSet[0] ? false : true,
+          };
+        });
+      } catch (e) {
+        console.error(e);
+      }
+      const totalInvestment = _.sum(
+        dataTable.map((item) => item.numbers.investment)
+      );
+      const totalValue = _.sum(
+        dataTable.map((item) => item.numbers.currentValue)
+      );
+      dataTable = dataTable.map((item) => {
+        const allocation =
+          (item.numbers.investment / totalInvestment) * 100 || 0;
+        const share = (item.numbers.currentValue / totalValue) * 100;
+        return {
+          ...item,
+          numbers: {
+            ...item.numbers,
+            allocation,
+            share,
+          },
+          allocation: allocation.toFixed(2) + " %",
+          share: share.toFixed(2) + " %",
+        };
+      });
+      return dataTable;
+    })();
+
+  $: {
+    filteredTable = dataTable
+      .filter((line) => {
+        console.log("line", line);
+        let condition = true;
+        const hasHolding = line.holdings > 0;
+        if (filterHideZeroValue && hasHolding) {
+          condition = line.numbers.currentValue >= 1;
+        }
+        if (filterActiveOnly && !hasHolding) {
+          condition = false;
+        }
+        return condition;
+      })
+      .reverse();
+  }
+
+  // makeshift aggregator
+  function aggr(g) {
+    return g[1]((dataTable || []).map((i) => g[0](i.numbers)));
+  }
+
+  const MUSH = {
+    totalRoi: [(i) => i.gain, _.sum],
+    totalInvestment: [(i) => i.investment, _.sum],
+    totalBalanceValue: [(i) => i.currentValue, _.sum],
+  };
+
+  $: totalInvestment = dataTable && aggr(MUSH.totalInvestment);
+  $: totalRoi = dataTable && aggr(MUSH.totalRoi) / totalInvestment;
+  $: totalBalanceValue = dataTable && aggr(MUSH.totalBalanceValue);
+  $: totalLiquidValue = totalBalanceValue;
+
+  const watchTokenTxs = async () => {
+    console.log("START WATCH");
+    let pricesPromises = Object.keys(tokenTxsRaw).map((symbol) => {
+      const txPromises = tokenTxs[symbol].map((tx) =>
+        Promise.all([
+          tx,
+          tokens[symbol].cgId
+            ? fetchTokenPrice({
+                id: tokens[symbol].cgId,
+                startTime: moment.unix(tx.timestamp).startOf("hour").unix(),
+                endTime: moment.unix(tx.timestamp).endOf("hour").unix(),
+              })
+            : {},
+        ])
+      );
+
+      return Promise.all(txPromises).then((histData) => {
+        return histData.map(([tx, item]) => {
+          if (!item.prices) return { symbol };
+          return {
+            symbol,
+            txHash: tx.hash,
+            value: tx.decimalValue,
+            marketCap: item.market_caps[0] && item.market_caps[0][1],
+            price: item.prices[0] && item.prices[0][1],
+          };
+        });
+      });
+    });
+
+    let data = await Promise.all(pricesPromises);
+    let _tokenTxsPrices = {};
+    data.forEach((txs) => {
+      _tokenTxsPrices[txs[0].symbol] = txs;
+    });
+    tokenTxsPrices = _tokenTxsPrices;
+
+    let tokenMarketData = await fetchMarkets();
+    let _tokenMarket = {};
+    tokenMarketData.forEach((token) => {
+      _tokenMarket[token.symbol.toUpperCase()] = token;
+    });
+    tokenMarket = _tokenMarket;
+    loading = false;
+    console.log("END watch");
+  };
+
+  $: if (tokenTxs) {
+    watchTokenTxs().then();
+  }
+
+  onMount(() => {
+    // web3 = new ethers.providers.JsonRpcProvider(MAINNET);
+
+    const etherscanKey = localStorage.getItem("ETHERSCAN_KEY");
+    if (etherscanKey) {
+      etherscan = etherscanApi.init(etherscanKey);
+    }
+
+    // Coingecko: closed SaaS, restrictive API
+    apiCoingecko = makeApi({
+      baseUrl: "https://api.coingecko.com/api/v3/",
+    });
+
+    // ??: multichain api
+    apiDeepIndex = makeApi({
+      baseUrl: "",
+      baseHeader: { "X-API-Key": "" },
+    });
+
+    // 0x Protocol: public API
+    const zeroXHosts = {
+      ethereum: "https://api.0x.org/",
+      bsc: "https://bsc.api.0x.org/",
+      polygon: "https://polygon.api.0x.org/",
+    };
+
+    apiZeroX = _.mapValues(zeroXHosts, (baseUrl) => {
+      return makeApi({ baseUrl });
+    });
+
+    apiGas = makeApi({
+      baseUrl: "https://ethgasstation.info/api/ethgasAPI.json?",
+    });
+
+    fetchCoingeckoList();
+    fetchEthPrices();
+    window.setInterval(fetchEthPrices, 60000);
+  });
+</script>
+
+<body>
+  <div class="home" class:light-mode={lightMode}>
+    <div class="claimer">
+      <span
+        ><strong>This version of glove</strong> is meant only for interactive UI
+        Demo, <strong>accounting is KNOWN to be mostly incorrect</strong>.
+        Addresses go through etherscan, prices come from coingecko.
+        <a href="https://etherscan.io/myapikey" target="_blank">Get your key</a
+        ></span
+      >
+      | <a href="https://glove.fyi/manifest">Contribute / Source</a>
+    </div>
+    <div class="address-field flex center">
+      {#if etherscan}
+        <form class="address" on:submit|preventDefault={handleEthAddress}>
+          <label for="eth-address">Address</label>
+          <input
+            id="eth-address"
+            name="eth-address"
+            type={hideBalances ? "password" : "text"}
+            class="align-center"
+            :value="ethAddress"
+          />
+          <button>PULL</button>
+        </form>
+      {:else}
+        <form
+          class="etherscan-key"
+          on:submit|preventDefault={handleEtherscanKey}
+        >
+          <label for="etherscan-key">Etherscan API</label>
+          <input
+            type="submit"
+            id="dev_key"
+            name="dev_key"
+            value="USE DEV KEY"
+          />/ OR
+          <input
+            id="etherscan-key"
+            name="etherscan-key"
+            class="align-center"
+            bind:value={keys.etherscan}
+          />
+          <input
+            type="submit"
+            id="own_key"
+            name="own_key"
+            value="SET OWN KEY"
+          />
+        </form>
+      {/if}
+      <div>
+        <input type="checkbox" bind:checked={hideBalances} /> Hide Balances
+        {" "}
+        <input type="checkbox" bind:checked={filterHideZeroValue} /> Hide
+        Valueless
+        {" "}
+        <input type="checkbox" bind:checked={filterActiveOnly} /> Active Only
+        &emsp;
+        <input type="checkbox" bind:checked={lightMode} /> 💡 Lights &emsp; ⛽
+        gε {gasPrice}
+      </div>
+    </div>
+    <div class="status-bar align-center">
+      <span>
+        Ξ {mask(Number(balance).toFixed(6))} / {mask(
+          toFormattedUsd(Number(balance) * ethPrice, 2)
+        )}
+      </span>
+      &emsp;|&emsp;
+      <span>
+        <strong>Value</strong>
+        {mask(toFormattedUsd(totalBalanceValue, 2))}
+      </span>
+      &emsp;|&emsp;
+      <span>
+        <strong>Exit Value</strong>
+        {mask(toFormattedUsd(totalLiquidValue, 2))}
+      </span>
+      &emsp;|&emsp;
+      <span>
+        <strong>Investment</strong>
+        <span>{mask(toFormattedUsd(totalInvestment))}</span>
+      </span>
+      &emsp;|&emsp;
+      <span>
+        <strong>ROI</strong>
+        <span class:positive={totalRoi > 0} class:negative={totalRoi < 0}>
+          {toFormattedRoi(totalRoi)}
+        </span>
+      </span>
+    </div>
+
+    {#if !loading}
+      <table class="data-table" cellpadding="10">
+        <thead class="bold">
+          <tr>
+            <th width="250">Asset</th>
+            <th>ROI</th>
+            <th>Holdings</th>
+            <th>Value</th>
+            <th>Value Share</th>
+            <th>Investment</th>
+            <th>Allocation</th>
+            <th width="300">Transactions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {#each filteredTable || dataTable as item}
+            <tr>
+              <td valign="top" class="">
+                <p class="slim" style="font-size: 15px">
+                  <img
+                    style="vertical-align: middle"
+                    src={item.image}
+                    width="20"
+                    alt=""
+                  />&emsp;<span>{item.name}</span>
+                </p>
+                <span class="bold">⬨ {item.symbol || item.address}</span><br />
+                <div class="flex" style="justify-content: space-between">
+                  <span>
+                    {toFormattedUsd(item.numbers.currentPrice, 3)}
+                    <br />
+                    {#if item.numbers.currentPriceChange}
+                      <small
+                        class="change"
+                        class:positive={item.numbers.currentPriceChange > 0}
+                        class:negative={item.numbers.currentPriceChange < 0}
+                      >
+                        {item.numbers.currentPriceChange.toFixed(2)} %
+                      </small>
+                    {/if}
+                  </span>
+                  <span>
+                    ▴ {(item.numbers.currentMarketCap / 1000000).toFixed(2)}m
+                    <br />
+                    <small class="grey change">
+                      ◌ {toFormattedPercent(item.capRatio)}
+                    </small>
+                  </span>
+                </div>
+              </td>
+              <td align="right">
+                <span
+                  class="bold"
+                  class:positive={item.isGain}
+                  class:negative={!item.isGain}
+                >
+                  {item.roi}
+                </span>
+                <br />
+                {#if item.holdings === 0}
+                  <small class="grey change">
+                    {item.unrealRoi}
+                  </small>
+                {/if}
+              </td>
+              <td align="right">{mask(item.holdings.toFixed(6))}</td>
+              <td align="right">
+                {mask(toFormattedUsd(item.numbers.currentValue, 2))}
+              </td>
+              <td align="right">{item.share}</td>
+              <td align="right">{mask(toFormattedUsd(item.investment, 2))}</td>
+              <td align="right">{item.allocation}</td>
+              <td>
+                {#each item.actions as action}
+                  <div
+                    class="action-cell"
+                    class:in={action.class.in}
+                    class:out={action.class.out}
+                  >
+                    <p>
+                      <span style="flex: 2">{action.time}</span>
+                      <span style="flex: 1" class="symbol align-center">
+                        {action.symbol}
+                      </span>
+                      <span style="flex: 3">
+                        {mask(action.tx.decimalValue.toFixed(2))}
+                        <br />
+                        <small class="grey">
+                          {toFormattedUsd(action.price)} / {(
+                            action.marketCap / 1000000
+                          ).toFixed(2)}m
+                        </small>
+                      </span>
+                    </p>
+                  </div>
+                {/each}
+              </td>
+            </tr>
+          {/each}
+        </tbody>
+      </table>
+    {/if}
+  </div>
+</body>
+
+<style lang="scss">
+  @import url("https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&display=swap");
+
+  $primary: #fff;
+  $background: #000;
+
+  .bold {
+    font-weight: 700;
+  }
+
+  .flex {
+    display: flex;
+
+    &.center {
+      justify-content: center;
+      align-items: center;
+    }
+  }
+
+  .flex.j-center {
+    justify-content: center;
+  }
+
+  .flex.a-center {
+    justify-content: center;
+  }
+
+  .flex.row {
+    flex-flow: row;
+  }
+
+  .flex.column {
+    flex-flow: column;
+  }
+
+  .align-center {
+    text-align: center;
+  }
+
+  //////
+
+  $green: #00ee00;
+  $red: #ff5959;
+
+  .claimer {
+    font-family: Helvetica, sans-serif;
+    font-size: 13px;
+    margin: 0;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: rgba(139, 139, 139, 0.1);
+    padding: 10px;
+    text-align: center;
+
+    > * {
+      display: inline-block;
+      padding: 0 6px;
+    }
+  }
+
+  .home {
+    padding: 10px;
+    padding-top: 50px;
+    &.light-mode {
+      background: #fff;
+      color: #000;
+      input,
+      select,
+      button,
+      .button {
+        background: transparent;
+        color: #333;
+        border: 1px solid #000;
+      }
+
+      button,
+      input[type="submit"],
+      .button {
+        color: #000;
+      }
+
+      table {
+        th {
+          background: #eee;
+        }
+        tr {
+          box-shadow: 0 1px 0 0 rgba(0, 0, 0, 0.1);
+        }
+        td {
+          &:before {
+            background-color: rgba(0, 0, 0, 0.1);
+          }
+        }
+      }
+
+      .positive {
+        color: #059e03;
+      }
+    }
+  }
+
+  .address-field {
+    margin: 20px 0;
+    input,
+    button,
+    label,
+    select,
+    .button {
+      margin: 0 10px;
+    }
+  }
+
+  #eth-address {
+    width: 350px;
+  }
+
+  table {
+    border-collapse: collapse;
+
+    .action-cell {
+      p {
+        display: flex;
+        align-items: center;
+        flex-grow: 1;
+        margin: 0;
+      }
+      span {
+        flex: 1;
+      }
+
+      .symbol {
+        font-weight: bold;
+      }
+    }
+  }
+
+  table {
+    th {
+      background: #111;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+    tr {
+      box-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.1);
+    }
+    td {
+      position: relative;
+      &:before {
+        content: "";
+        width: 1px;
+        background-color: rgba(255, 255, 255, 0.05);
+        height: 20px;
+        position: absolute;
+        left: 0;
+        top: 100%;
+        transform: translateY(-50%);
+      }
+
+      &:last-of-type {
+        background: rgba(139, 139, 139, 0.03);
+      }
+    }
+  }
+
+  table td > * {
+    margin: 5px 0;
+  }
+
+  .status-bar {
+    margin: 20px auto;
+  }
+
+  .data-table {
+    max-width: 100%;
+    // width: 100%;
+    margin: 30px auto;
+  }
+
+  .slim {
+    margin: 10px 0;
+  }
+
+  .positive {
+    color: #00ee00;
+  }
+
+  .negative {
+    color: #ff5959;
+  }
+
+  .grey {
+    opacity: 0.6;
+  }
+
+  .bold {
+    font-weight: 600;
+  }
+
+  .spaced {
+    letter-spacing: 1px;
+  }
+
+  .small {
+    font-size: 11px;
+  }
+</style>

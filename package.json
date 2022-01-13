@@ -2,31 +2,37 @@
   "name": "glove",
   "version": "0.1.0",
   "engines": {
-    "node": "12.16.2"
+    "node": "16.13.0"
   },
   "license": "AGPL-3.0",
   "scripts": {
-    "serve": "vue-cli-service serve",
-    "build": "vue-cli-service build",
-    "lint": "vue-cli-service lint"
+    "build": "rollup -c",
+    "dev": "rollup -c -w",
+    "start": "sirv public --no-clear"
   },
   "dependencies": {
+    "ethers": "^5.5.3",
     "etherscan-api": "^10.0.5",
     "lodash": "^4.17.20",
     "moment": "^2.29.1",
-    "node-sass": "^5.0.0",
-    "sass-loader": "^10.1.1",
-    "vue": "^3.0.0",
+    "sirv-cli": "^2.0.1",
     "web3": "^1.3.1"
   },
   "devDependencies": {
-    "@vue/cli-plugin-babel": "~4.5.0",
-    "@vue/cli-plugin-eslint": "~4.5.0",
-    "@vue/cli-service": "~4.5.0",
-    "@vue/compiler-sfc": "^3.0.0",
+    "@rollup/plugin-commonjs": "^17.0.0",
+    "@rollup/plugin-json": "^4.1.0",
+    "@rollup/plugin-node-resolve": "^11.0.0",
     "babel-eslint": "^10.1.0",
     "eslint": "^6.7.2",
-    "eslint-plugin-vue": "^7.0.0-0"
+    "eslint-plugin-vue": "^7.0.0-0",
+    "node-sass": "^7.0.1",
+    "rollup": "^2.3.4",
+    "rollup-plugin-css-only": "^3.1.0",
+    "rollup-plugin-livereload": "^2.0.0",
+    "rollup-plugin-svelte": "^7.0.0",
+    "rollup-plugin-terser": "^7.0.0",
+    "svelte": "^3.0.0",
+    "svelte-preprocess": "^4.10.1"
   },
   "eslintConfig": {
     "root": true,
@@ -34,7 +40,6 @@
       "node": true
     },
     "extends": [
-      "plugin:vue/vue3-essential",
       "eslint:recommended"
     ],
     "parserOptions": {

@@ -1,0 +1,28 @@
+body {
+    font-family: "Courier Prime", Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background-color: #111;
+    color: #fff;
+    padding: 0;
+    margin: 0;
+}
+
+input,
+select,
+button,
+.button {
+    font-family: "Courier Prime";
+    background: transparent;
+    color: #ddd;
+    border: 1px solid #fff;
+    border-radius: 3px;
+    padding: 10px 20px;
+}
+
+button,
+input[type="submit"] {
+    cursor: pointer;
+    color: #00fffc;
+    font-weight: 700;
+}
