@@ -42,6 +42,7 @@
   let apiCoingecko;
   let apiDeepIndex;
   let apiZeroX;
+  let apiChifra;
   let apiGas;
   let web3;
   let etherscan = null;
@@ -59,7 +60,6 @@
 
   let coingeckoList = [];
   let gasPrice = 0;
-  let gasPriceUsd = 0;
   let ethPrice = 0;
   let ethAddress = "";
   let balance = 0;
@@ -131,9 +131,8 @@
     ethAddress = event.target.querySelector("[name='eth-address']").value;
     // let balance = await web3.eth.getBalance(ethAddress);
     // balance = web3.utils.fromWei(balance, 'ether');
-    let balance = await etherscan.account.balance(ethAddress, "latest");
-    balance = ethers.utils.formatEther(balance.result);
-
+    let _balance = await etherscan.account.balance(ethAddress, "latest");
+    balance = ethers.utils.formatEther(_balance.result);
     let _ethTxs = await etherscan.account.txlist(
       ethAddress,
       1,
@@ -167,10 +166,6 @@
       1,
       "latest",
       "asc"
-    );
-
-    tokenTxs.result = tokenTxs.result.filter(
-      (tx) => tx.contractAddress !== WETH_CONTRACT_ADDRESS
     );
 
     tokenTxsMap = tokenTxs.result.map((x) => ({
@@ -230,10 +225,6 @@
       : roi.toFixed(2) + " %";
   }
 
-  function mask(value) {
-    return hideBalances ? "********" : value;
-  }
-
   async function fetchCoingeckoList() {
     let res = await apiCoingecko("coins/list", {
       include_platform: true,
@@ -269,6 +260,10 @@
     });
     return res;
   }
+
+  $: mask = function (value) {
+    return hideBalances ? "********" : value;
+  };
 
   $: assets =
     tokenTransfers &&
@@ -349,10 +344,12 @@
   $: filtered =
     tokenTxs &&
     (() => {
+      const filtered = _.mapValues(tokenTxs, function (trx) {
+        return _.take(trx, 10);
+      });
+      delete filtered.WETH;
       return {
-        tokenTxs: _.mapValues(tokenTxs, function (trx) {
-          return _.take(trx, 10);
-        }),
+        tokenTxs: filtered,
       };
     })();
 
@@ -549,7 +546,7 @@
   };
 
   $: totalInvestment = dataTable && aggr(MUSH.totalInvestment);
-  $: totalRoi = dataTable && aggr(MUSH.totalRoi) / totalInvestment;
+  $: totalRoi = dataTable && (aggr(MUSH.totalRoi) / totalInvestment) * 100;
   $: totalBalanceValue = dataTable && aggr(MUSH.totalBalanceValue);
   $: totalLiquidValue = totalBalanceValue;
 
@@ -611,6 +608,11 @@
     if (etherscanKey) {
       etherscan = etherscanApi.init(etherscanKey);
     }
+
+    // trueblocks: open as they rarely come
+    apiChifra = makeApi({
+      baseUrl: "http://localhost:9000",
+    });
 
     // Coingecko: closed SaaS, restrictive API
     apiCoingecko = makeApi({
@@ -709,9 +711,24 @@
     </div>
     <div class="status-bar align-center">
       <span>
-        Ξ {mask(Number(balance).toFixed(6))} / {mask(
+        Ξ {mask(Number(balance).toFixed(6))} : {mask(
           toFormattedUsd(Number(balance) * ethPrice, 2)
         )}
+      </span>
+      {#if balances.WETH}
+        &emsp;/&emsp;
+        <span>
+          WΞ {mask(Number(balances.WETH).toFixed(6))} : {mask(
+            toFormattedUsd(Number(balances.WETH) * ethPrice, 2)
+          )}
+        </span>
+      {/if}
+      &emsp;|&emsp;
+      <span>
+        <strong>ROI</strong>
+        <span class:positive={totalRoi > 0} class:negative={totalRoi < 0}>
+          {toFormattedRoi(totalRoi)}
+        </span>
       </span>
       &emsp;|&emsp;
       <span>
@@ -727,13 +744,6 @@
       <span>
         <strong>Investment</strong>
         <span>{mask(toFormattedUsd(totalInvestment))}</span>
-      </span>
-      &emsp;|&emsp;
-      <span>
-        <strong>ROI</strong>
-        <span class:positive={totalRoi > 0} class:negative={totalRoi < 0}>
-          {toFormattedRoi(totalRoi)}
-        </span>
       </span>
     </div>
 
