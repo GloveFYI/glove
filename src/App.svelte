@@ -261,6 +261,70 @@
     return res;
   }
 
+  async function updateMarkets() {
+    let tokenMarketData = await fetchMarkets();
+    let _tokenMarket = {};
+    tokenMarketData.forEach((token) => {
+      _tokenMarket[token.symbol.toUpperCase()] = token;
+    });
+    tokenMarket = _tokenMarket;
+  }
+
+  const LOCALE =
+    (navigator.languages && navigator.languages.length
+      ? navigator.languages[0]
+      : navigator.language) || "en";
+
+  const percentFormatter = Intl.NumberFormat(LOCALE, {
+    style: "percent",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+  const fiatFormatter = Intl.NumberFormat(LOCALE, {
+    style: "currency",
+    currency: "USD",
+    currencyDisplay: "narrowSymbol",
+    minimumFractionDigits: 2,
+  });
+  const fiatpactFormatter = Intl.NumberFormat(LOCALE, {
+    notation: "compact",
+    style: "currency",
+    currency: "USD",
+    currencyDisplay: "narrowSymbol",
+    // minimumFractionDigits: 2,
+  });
+  const numFormatter = Intl.NumberFormat(LOCALE, {});
+  const numpactFormatter = Intl.NumberFormat(LOCALE, {
+    notation: "compact",
+  });
+
+  $: fiat = function (value, flag = "") {
+    let formatter = flag.includes("c") ? fiatpactFormatter : fiatFormatter;
+    return formatter.format(Number(value)).toLowerCase();
+  };
+
+  $: eth = function (value) {
+    return "Ξ " + numFormatter.format(Number(value));
+  };
+
+  $: percent = function (value) {
+    if (isNaN(value)) return percentFormatter.format(0);
+    if (!isFinite(value)) return "∞";
+    return percentFormatter.format(Number(value));
+  };
+
+  $: percentiple = function (value) {
+    if (isNaN(value)) return percentFormatter.format(0);
+    if (!isFinite(value)) return "∞";
+    return value >= 1
+      ? numFormatter.format(value + 1) + " X"
+      : percentFormatter.format(value);
+  };
+
+  $: number = function (value) {
+    return numFormatter.format(Number(value));
+  };
+
   $: mask = function (value) {
     return hideBalances ? "********" : value;
   };
@@ -448,17 +512,17 @@
 
           const gain = totalBalanceValue + returnValue - totalInvestment;
           const unrealGain = alltimeHoldings * currentPrice - totalInvestment;
-          let roi = (gain / totalInvestment) * 100 || 0;
+          let roi = gain / totalInvestment || 0;
           // if(!_.isFinite(roi)) {
           //   roi = 0;
           // }
-          let unrealRoi = (unrealGain / totalInvestment) * 100 || 0;
+          let unrealRoi = unrealGain / totalInvestment || 0;
           // if(!_.isFinite(unrealRoi)) {
           //   unrealRoi = 0;
           // }
 
           const currentPriceChange = tokenMarket[symbol]
-            ? tokenMarket[symbol].price_change_percentage_24h
+            ? tokenMarket[symbol].price_change_percentage_24h / 100
             : null;
 
           return {
@@ -481,13 +545,12 @@
               gain,
               roi,
             },
-            investment: totalInvestment.toFixed(5),
-            holdings: totalBalance,
-            roi: toFormattedRoi(roi),
-            unrealRoi: toFormattedRoi(unrealRoi),
-            capRatio: (currentMarketCap / fdValuation) * 100,
+            investment: fiat(totalInvestment),
+            holdings: number(totalBalance),
+            roi: percentiple(roi),
+            unrealRoi: percentiple(unrealRoi),
+            circSupply: percent(currentMarketCap / fdValuation),
             isGain: roi >= 0,
-            isAirdrop: txValueSet[0] ? false : true,
           };
         });
       } catch (e) {
@@ -500,9 +563,8 @@
         dataTable.map((item) => item.numbers.currentValue)
       );
       dataTable = dataTable.map((item) => {
-        const allocation =
-          (item.numbers.investment / totalInvestment) * 100 || 0;
-        const share = (item.numbers.currentValue / totalValue) * 100;
+        const allocation = item.numbers.investment / totalInvestment || 0;
+        const share = item.numbers.currentValue / totalValue;
         return {
           ...item,
           numbers: {
@@ -510,8 +572,8 @@
             allocation,
             share,
           },
-          allocation: allocation.toFixed(2) + " %",
-          share: share.toFixed(2) + " %",
+          allocation: percent(allocation),
+          share: percent(share),
         };
       });
       return dataTable;
@@ -520,9 +582,8 @@
   $: {
     filteredTable = dataTable
       .filter((line) => {
-        console.log("line", line);
         let condition = true;
-        const hasHolding = line.holdings > 0;
+        const hasHolding = line.numbers.holdings > 0;
         if (filterHideZeroValue && hasHolding) {
           condition = line.numbers.currentValue >= 1;
         }
@@ -546,12 +607,11 @@
   };
 
   $: totalInvestment = dataTable && aggr(MUSH.totalInvestment);
-  $: totalRoi = dataTable && (aggr(MUSH.totalRoi) / totalInvestment) * 100;
+  $: totalRoi = dataTable && aggr(MUSH.totalRoi) / totalInvestment;
   $: totalBalanceValue = dataTable && aggr(MUSH.totalBalanceValue);
   $: totalLiquidValue = totalBalanceValue;
 
   const watchTokenTxs = async () => {
-    console.log("START WATCH");
     let pricesPromises = Object.keys(tokenTxsRaw).map((symbol) => {
       const txPromises = tokenTxs[symbol].map((tx) =>
         Promise.all([
@@ -587,14 +647,8 @@
     });
     tokenTxsPrices = _tokenTxsPrices;
 
-    let tokenMarketData = await fetchMarkets();
-    let _tokenMarket = {};
-    tokenMarketData.forEach((token) => {
-      _tokenMarket[token.symbol.toUpperCase()] = token;
-    });
-    tokenMarket = _tokenMarket;
+    await updateMarkets();
     loading = false;
-    console.log("END watch");
   };
 
   $: if (tokenTxs) {
@@ -642,7 +696,11 @@
 
     fetchCoingeckoList();
     fetchEthPrices();
-    window.setInterval(fetchEthPrices, 60000);
+
+    window.setInterval(async () => {
+      await fetchEthPrices();
+      await updateMarkets();
+    }, 30000);
   });
 </script>
 
@@ -711,15 +769,13 @@
     </div>
     <div class="status-bar align-center">
       <span>
-        Ξ {mask(Number(balance).toFixed(6))} : {mask(
-          toFormattedUsd(Number(balance) * ethPrice, 2)
-        )}
+        {mask(eth(balance))} : {mask(fiat(Number(balance) * ethPrice))}
       </span>
       {#if balances.WETH}
         &emsp;/&emsp;
         <span>
-          WΞ {mask(Number(balances.WETH).toFixed(6))} : {mask(
-            toFormattedUsd(Number(balances.WETH) * ethPrice, 2)
+          W{mask(eth(balances.WETH))} : {mask(
+            fiat(Number(balances.WETH) * ethPrice)
           )}
         </span>
       {/if}
@@ -727,23 +783,23 @@
       <span>
         <strong>ROI</strong>
         <span class:positive={totalRoi > 0} class:negative={totalRoi < 0}>
-          {toFormattedRoi(totalRoi)}
+          {percentiple(totalRoi)}
         </span>
       </span>
       &emsp;|&emsp;
       <span>
         <strong>Value</strong>
-        {mask(toFormattedUsd(totalBalanceValue, 2))}
+        {mask(fiat(totalBalanceValue))}
       </span>
       &emsp;|&emsp;
       <span>
         <strong>Exit Value</strong>
-        {mask(toFormattedUsd(totalLiquidValue, 2))}
+        {mask(fiat(totalLiquidValue))}
       </span>
       &emsp;|&emsp;
       <span>
         <strong>Investment</strong>
-        <span>{mask(toFormattedUsd(totalInvestment))}</span>
+        <span>{mask(fiat(totalInvestment))}</span>
       </span>
     </div>
 
@@ -773,28 +829,31 @@
                     alt=""
                   />&emsp;<span>{item.name}</span>
                 </p>
-                <span class="bold">⬨ {item.symbol || item.address}</span><br />
+                <div class="flex">
+                  <span class="bold">⬨ {item.symbol || item.address}</span>
+                </div>
                 <div class="flex" style="justify-content: space-between">
-                  <span>
-                    {toFormattedUsd(item.numbers.currentPrice, 3)}
-                    <br />
+                  <div>
+                    {fiat(item.numbers.currentPrice)}<br>
                     {#if item.numbers.currentPriceChange}
                       <small
                         class="change"
                         class:positive={item.numbers.currentPriceChange > 0}
                         class:negative={item.numbers.currentPriceChange < 0}
                       >
-                        {item.numbers.currentPriceChange.toFixed(2)} %
+                        {percentiple(item.numbers.currentPriceChange)}
                       </small>
                     {/if}
-                  </span>
-                  <span>
-                    ▴ {(item.numbers.currentMarketCap / 1000000).toFixed(2)}m
+                  </div>
+                  <div>
+                    ▴ <span style="min-width: 60px; display: inline-block;">
+                      {fiat(item.numbers.currentMarketCap, "c")}</span
+                    >
                     <br />
                     <small class="grey change">
-                      ◌ {toFormattedPercent(item.capRatio)}
+                      ◌ {item.circSupply}
                     </small>
-                  </span>
+                  </div>
                 </div>
               </td>
               <td align="right">
@@ -806,18 +865,18 @@
                   {item.roi}
                 </span>
                 <br />
-                {#if item.holdings === 0}
+                {#if item.numbers.holdings === 0}
                   <small class="grey change">
                     {item.unrealRoi}
                   </small>
                 {/if}
               </td>
-              <td align="right">{mask(item.holdings.toFixed(6))}</td>
+              <td align="right">{mask(item.holdings)}</td>
               <td align="right">
-                {mask(toFormattedUsd(item.numbers.currentValue, 2))}
+                {mask(fiat(item.numbers.currentValue))}
               </td>
               <td align="right">{item.share}</td>
-              <td align="right">{mask(toFormattedUsd(item.investment, 2))}</td>
+              <td align="right">{mask(item.investment)}</td>
               <td align="right">{item.allocation}</td>
               <td>
                 {#each item.actions as action}
@@ -835,9 +894,7 @@
                         {mask(action.tx.decimalValue.toFixed(2))}
                         <br />
                         <small class="grey">
-                          {toFormattedUsd(action.price)} / {(
-                            action.marketCap / 1000000
-                          ).toFixed(2)}m
+                          {fiat(action.price)} / {fiat(action.marketCap, "c")}
                         </small>
                       </span>
                     </p>
