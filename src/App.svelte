@@ -1,12 +1,16 @@
 <script>
+  import { Buffer } from "buffer";
   import { onMount } from "svelte";
   import moment from "moment";
   import _ from "lodash";
   import { ethers } from "ethers";
   import etherscanApi from "etherscan-api";
+  import namehash from "eth-ens-namehash";
 
   const MAINNET = "";
   const WETH_CONTRACT_ADDRESS = "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2";
+  const ENS_REGISTRY_CONTRACT_ADDRESS =
+    "0x00000000000c2e074ec69a0dfb2997ba6c7d2e1e";
   const YEK = "YWE7CYXT15F5VBY9RQFV188JCXPQZ1M3GC";
 
   const NETWORK = {
@@ -14,6 +18,8 @@
     BSC_MAINNET: "bsc",
     POLYGON_MAINNET: "polygon",
   };
+
+  window.Buffer = Buffer;
 
   function makeApi({ baseUrl, baseHeader = {} }) {
     return (endpoint, query) => {
@@ -129,6 +135,17 @@
 
   async function handleEthAddress(event) {
     ethAddress = event.target.querySelector("[name='eth-address']").value;
+
+    if (ethAddress.includes(".eth")) {
+      const data = "02571be3" + namehash.hash(ethAddress).slice(2);
+      const address = await etherscan.proxy.eth_call(
+        ENS_REGISTRY_CONTRACT_ADDRESS,
+        data,
+        "latest"
+      );
+      ethAddress = "0x" + address.result.slice(-40);
+    }
+
     // let balance = await web3.eth.getBalance(ethAddress);
     // balance = web3.utils.fromWei(balance, 'ether');
     let _balance = await etherscan.account.balance(ethAddress, "latest");
@@ -719,7 +736,7 @@
     <div class="address-field flex center">
       {#if etherscan}
         <form class="address" on:submit|preventDefault={handleEthAddress}>
-          <label for="eth-address">Address</label>
+          <label for="eth-address">Address / ENS</label>
           <input
             id="eth-address"
             name="eth-address"
@@ -834,7 +851,7 @@
                 </div>
                 <div class="flex" style="justify-content: space-between">
                   <div>
-                    {fiat(item.numbers.currentPrice)}<br>
+                    {fiat(item.numbers.currentPrice)}<br />
                     {#if item.numbers.currentPriceChange}
                       <small
                         class="change"

@@ -11,6 +11,8 @@
     "start": "sirv public --no-clear"
   },
   "dependencies": {
+    "buffer": "^6.0.3",
+    "eth-ens-namehash": "^2.0.8",
     "ethers": "^5.5.3",
     "etherscan-api": "^10.0.5",
     "lodash": "^4.17.20",
