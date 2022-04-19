@@ -1,8 +1,8 @@
 <script>
   import { Buffer } from "buffer";
-  import { onMount } from "svelte";
   import moment from "moment";
   import _ from "lodash";
+  import { onMount } from "svelte";
   import { ethers } from "ethers";
   import etherscanApi from "etherscan-api";
   import namehash from "eth-ens-namehash";
@@ -44,6 +44,8 @@
   }
 
   // clients
+
+  let statements = JSON.parse(localStorage.getItem("glove_statements"));
 
   let apiCoingecko;
   let apiDeepIndex;
@@ -345,6 +347,12 @@
   $: mask = function (value) {
     return hideBalances ? "********" : value;
   };
+
+  let tokenStatements = {};
+
+  // $: {
+  //   tokenStatements =
+  // }
 
   $: assets =
     tokenTransfers &&
@@ -719,6 +727,25 @@
       await updateMarkets();
     }, 30000);
   });
+
+  const statementValue = (s) => {
+    let value = "";
+    // if(s.totalIn) {
+    //   value = "+"+Number(s.totalIn)*Math.pow(10, -s.decimals);
+    // }
+    // if(s.totalOutLessGas) {
+    //   value += ((value) ? " / " : "") + Number(s.totalOutLessGas)*Math.pow(10, -s.decimals);
+    // }
+    return value;
+  };
+
+  const trulyReconciled = (s) => {
+    const cond1 =
+      BigInt(s.begBal) + BigInt(s.totalIn) ===
+      BigInt(s.totalOut) + BigInt(s.endBal);
+    const cond2 = BigInt(s.begBal) === BigInt(s.prevBlkBal);
+    return [cond1 && cond2, cond1, cond2];
+  };
 </script>
 
 <body>
@@ -923,7 +950,82 @@
         </tbody>
       </table>
     {/if}
+    <!-- <div id="tb-audit">
+      // EOA: assetSymbol === WEI => assetAddr === ethAddress
+        <br />
+        <div class="transaction-box">
+          <small
+            >(▲ <span class="bg-grey">? /</span>) <em>bN.tI</em> |
+            <em>WEI:gCO*sP</em> | <em>ether</em>
+          </small>
+          <p>
+            <em>statement[i]: (tIn || tOLG)</em> <em>symbol</em>
+          </p>
+        </div>
+        {#each statements as tx}
+          <div
+            class="transaction-box"
+            class:border-red={!tx.isError && tx.value && tx.statements[0].gasCostOut
+              ? tx.value !== Number(tx.statements[0].totalOutLessGas)
+              : false}
+            class:grey={tx.isError}
+          >
+            {#if tx.logs.find((x) => x.name === "Approval" || x.name === "ApprovalForAll")}<hr
+              />{/if}
+            <small
+              class:grey={!tx.statements[0].gasCostOut}
+              class:bg-negative={tx.isError === 1}
+              on:click={() => {
+                let x = JSON.parse(JSON.stringify(tx));
+                delete x.statements;
+                console.log(x);
+                alert(JSON.stringify(x, null, "    "));
+              }}
+              >{tx.from === ""
+                ? "▲"
+                : tx.to === ""
+                ? "/"
+                : "?"}&emsp;
+              {tx.statements[0].blockNumber}.{tx.statements[0].transactionIndex} | ${(
+                tx.statements[0].spotPrice *
+                Number(tx.statements[0].gasCostOut) *
+                Math.pow(10, -18)
+              ).toFixed(3)} | {eth(tx.value * Math.pow(10, -18))}</small
+            >
+            {#each tx.statements as s}
+              <p
+                on:click={() => {
+                  console.log(s);
+                  alert(JSON.stringify(s, null, "    "));
+                }}
+                class:border-red={!tx.isError
+                  ? trulyReconciled(s)[0] !== s.reconciled
+                  : false}
+                class:negative={!s.reconciled}
+              >
+                {"+" + Number(s.totalIn) * Math.pow(10, -18)} / {"-" +
+                  Number(s.totalOutLessGas) * Math.pow(10, -18)}
+                {s.assetSymbol === "WEI"
+                  ? "ETH"
+                  : s.assetAddr === WETH_CONTRACT_ADDRESS
+                  ? "WETH"
+                  : s.assetSymbol.slice(0, 2) !== "0x"
+                  ? s.assetSymbol
+                  : s.assetAddr.slice(0, 6)}
+                <strong>{s.reconciliationType}</strong>
+
+                {trulyReconciled(s)[1]} / {trulyReconciled(s)[2]} | {BigInt(
+                  s.begBal
+                ) + BigInt(s.totalIn)} / {BigInt(s.endBal) + BigInt(s.totalOut)}
+              </p>
+            {/each}
+          </div>
+        {/each}
+    </div> -->
   </div>
+  <footer class="text-center">
+    <small>Served from SiaSky (DeFS)</small>
+  </footer>
 </body>
 
 <style lang="scss">
@@ -934,6 +1036,10 @@
 
   .bold {
     font-weight: 700;
+  }
+
+  .text-center {
+    text-align: center;
   }
 
   .flex {
@@ -1029,6 +1135,25 @@
     }
   }
 
+  .transaction-box {
+    min-width: 250px;
+    display: inline-block;
+    margin: 10px;
+    padding: 10px;
+    border: 1px solid #000;
+    vertical-align: top;
+    border-radius: 2px;
+    p:hover {
+      background-color: rgb(202, 255, 245);
+    }
+    small {
+      font-weight: bold;
+      background: #000;
+      padding: 2px;
+      color: #fff;
+    }
+  }
+
   .address-field {
     margin: 20px 0;
     input,
@@ -1119,8 +1244,22 @@
     color: #ff5959;
   }
 
+  .bg-negative {
+    background: #ff5959 !important;
+    color: #fff !important;
+  }
+
   .grey {
     opacity: 0.6;
+  }
+
+  .bg-grey {
+    background-color: #666;
+  }
+
+  .border-red {
+    border: 1px solid;
+    border-color: #ff5959;
   }
 
   .bold {
