@@ -7,6 +7,8 @@
   import etherscanApi from "etherscan-api";
   import namehash from "eth-ens-namehash";
 
+  import { dictionary, locale, _ as l } from "svelte-i18n";
+
   const MAINNET = "";
   const WETH_CONTRACT_ADDRESS = "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2";
   const ENS_REGISTRY_CONTRACT_ADDRESS =
@@ -42,6 +44,56 @@
   function timeout(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
+
+  dictionary.set({
+    en: {
+      app: {
+        notice: "",
+        pull: "pull",
+        address: "Address",
+        lights: "Lights",
+        active_only: "Active Only",
+        hide_valueless: "Hide Valueless",
+        hide_balances: "Hide Balances",
+        served_from: "Served from",
+      },
+      sheet: {
+        asset: "Asset",
+        roi: "ROI",
+        holdings: "Holdings",
+        value: "Value",
+        value_share: "Value Share",
+        investment: "Investment",
+        allocation: "Allocation",
+        transactions: "Transactions",
+      },
+    },
+    de: {
+      app: {
+        pull: "einziehen",
+        address: "Anschrift",
+        lights: "Beleuchtung",
+        active_only: "Nur aktiv",
+        hide_valueless: "Verstecke wertlose",
+        hide_balances: "Guthaben ausblenden",
+        served_from: "Serviert von",
+      },
+      sheet: {
+        asset: "Vermögenswert",
+        roi: "Anlagenrendite",
+        holdings: "Vermögensbestände",
+        value: "Wert",
+        value_share: "Wert Prozent",
+        investment: "Anlagebetrag",
+        allocation: "Zuweisung",
+        transactions: "Transaktionen",
+      },
+    },
+  });
+
+  let lang = (navigator?.language || "en-US").split("-")[0];
+
+  $: locale.set(lang);
 
   // clients
 
@@ -752,18 +804,22 @@
   <div class="home" class:light-mode={lightMode}>
     <div class="claimer">
       <span
-        ><strong>This version of glove</strong> is meant only for interactive UI
-        Demo, <strong>accounting is KNOWN to be mostly incorrect</strong>.
-        Addresses go through etherscan, prices come from coingecko.
+        >This version of glove is meant only for interactive UI Demo. <strong
+          >Accounting is KNOWN to be mostly incorrect</strong
+        >. Addresses go through etherscan, prices come from coingecko.
         <a href="https://etherscan.io/myapikey" target="_blank">Get your key</a
         ></span
       >
-      | <a href="https://glove.fyi/manifest">Contribute / Source</a>
+      | <a href="https://glove.fyi/manifest">Source & Contribute</a> |&emsp;
+      <div class="lang">
+        <span on:click={() => (lang = "en")}>EN</span> /
+        <span on:click={() => (lang = "de")}>DE</span>
+      </div>
     </div>
     <div class="address-field flex center">
       {#if etherscan}
         <form class="address" on:submit|preventDefault={handleEthAddress}>
-          <label for="eth-address">Address / ENS</label>
+          <label for="eth-address">{$l("app.address")} / ENS</label>
           <input
             id="eth-address"
             name="eth-address"
@@ -771,7 +827,7 @@
             class="align-center"
             :value="ethAddress"
           />
-          <button>PULL</button>
+          <button>{$l("app.pull")}</button>
         </form>
       {:else}
         <form
@@ -800,15 +856,16 @@
         </form>
       {/if}
       <div>
-        <input type="checkbox" bind:checked={hideBalances} /> Hide Balances
+        <input type="checkbox" bind:checked={hideBalances} />
+        {$l("app.hide_balances")}
         {" "}
-        <input type="checkbox" bind:checked={filterHideZeroValue} /> Hide
-        Valueless
+        <input type="checkbox" bind:checked={filterHideZeroValue} />
+        {$l("app.hide_valueless")}
         {" "}
-        <input type="checkbox" bind:checked={filterActiveOnly} /> Active Only
+        <input type="checkbox" bind:checked={filterActiveOnly} />
+        {$l("app.active_only")}
         &emsp;
-        <input type="checkbox" bind:checked={lightMode} /> 💡 Lights &emsp; ⛽
-        gε {gasPrice}
+        <input type="checkbox" bind:checked={lightMode} /> 💡 {$l("app.lights")}
       </div>
     </div>
     <div class="status-bar align-center">
@@ -825,40 +882,41 @@
       {/if}
       &emsp;|&emsp;
       <span>
-        <strong>ROI</strong>
+        <strong>{$l("sheet.roi")}</strong>
         <span class:positive={totalRoi > 0} class:negative={totalRoi < 0}>
           {percentiple(totalRoi)}
         </span>
       </span>
       &emsp;|&emsp;
       <span>
-        <strong>Value</strong>
+        <strong>{$l("sheet.value")}</strong>
         {mask(fiat(totalBalanceValue))}
       </span>
       &emsp;|&emsp;
       <span>
-        <strong>Exit Value</strong>
+        <strong>Exit {$l("sheet.value")}</strong>
         {mask(fiat(totalLiquidValue))}
       </span>
       &emsp;|&emsp;
       <span>
-        <strong>Investment</strong>
+        <strong>{$l("sheet.investment")}</strong>
         <span>{mask(fiat(totalInvestment))}</span>
       </span>
+      &emsp; / ⛽ gε {gasPrice}
     </div>
 
     {#if !loading}
       <table class="data-table" cellpadding="10">
         <thead class="bold">
           <tr>
-            <th width="250">Asset</th>
-            <th>ROI</th>
-            <th>Holdings</th>
-            <th>Value</th>
-            <th>Value Share</th>
-            <th>Investment</th>
-            <th>Allocation</th>
-            <th width="300">Transactions</th>
+            <th width="250">{$l("sheet.asset")}</th>
+            <th>{$l("sheet.roi")}</th>
+            <th>{$l("sheet.holdings")}</th>
+            <th>{$l("sheet.value")}</th>
+            <th>{$l("sheet.value_share")}</th>
+            <th>{$l("sheet.investment")}</th>
+            <th>{$l("sheet.allocation")}</th>
+            <th width="300">{$l("sheet.transactions")}</th>
           </tr>
         </thead>
         <tbody>
@@ -1024,7 +1082,7 @@
     </div> -->
   </div>
   <footer class="text-center">
-    <small>Served from SiaSky (DeFS)</small>
+    <small>{$l("app.served_from")} SiaSky (DeFS)</small>
   </footer>
 </body>
 
@@ -1091,6 +1149,13 @@
     > * {
       display: inline-block;
       padding: 0 6px;
+    }
+  }
+
+  .lang {
+    cursor: pointer;
+    span:hover {
+      color: #777;
     }
   }
 
@@ -1162,6 +1227,9 @@
     select,
     .button {
       margin: 0 10px;
+    }
+    button {
+      text-transform: uppercase;
     }
   }
 
