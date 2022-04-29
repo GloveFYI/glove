@@ -824,22 +824,22 @@
 </script>
 
 <body class:sans={!fontMono}>
-  <div class="home" class:light-mode={lightMode}>
-    <div class="claimer">
-      <span
-        >This version of glove is meant only for interactive UI Demo. <strong
-          >Accounting is KNOWN to be mostly incorrect</strong
-        >. Addresses go through etherscan, prices come from coingecko.
-        <a href="https://etherscan.io/myapikey" target="_blank">Get your key</a
-        ></span
-      >
-      | <a href="https://glove.fyi/manifest">Source & Contribute</a> |
-      <div class="lang">
-        <span on:click={() => (lang = "en")}>EN</span> /
-        <span on:click={() => (lang = "de")}>DE</span> /
-        <span on:click={() => (lang = "es")}>ES</span>
-      </div>
+  <div class="claimer">
+    <span
+      >This version of glove is meant only for interactive UI Demo. <strong
+        >Accounting is KNOWN to be mostly incorrect</strong
+      >. Addresses go through etherscan, prices come from coingecko.
+      <a href="https://etherscan.io/myapikey" target="_blank">Get your key</a
+      ></span
+    >
+    | <a href="https://glove.fyi/manifest">Source & Contribute</a> |
+    <div class="lang">
+      <span on:click={() => (lang = "en")}>EN</span> /
+      <span on:click={() => (lang = "de")}>DE</span> /
+      <span on:click={() => (lang = "es")}>ES</span>
     </div>
+  </div>
+  <div class="home" class:light-mode={lightMode}>
     <div class="address-field flex center">
       {#if etherscan}
         <form class="address" on:submit|preventDefault={handleEthAddress}>
@@ -879,19 +879,27 @@
           />
         </form>
       {/if}
-      <div>
-        <input type="checkbox" bind:checked={hideBalances} />
-        {$l("app.hide_balances")}
-        {" "}
-        <input type="checkbox" bind:checked={filterHideZeroValue} />
-        {$l("app.hide_valueless")}
-        {" "}
-        <input type="checkbox" bind:checked={filterActiveOnly} />
-        {$l("app.active_only")}
-        &emsp;
-        <input type="checkbox" bind:checked={lightMode} /> 💡 {$l("app.lights")}
-        {" "}
-        <input type="checkbox" bind:checked={fontMono} /> 🗏 Monospace
+      <div class="controls">
+        <div>
+          <input type="checkbox" bind:checked={hideBalances} />
+          {$l("app.hide_balances")}
+        </div>
+        <div>
+          <input type="checkbox" bind:checked={filterHideZeroValue} />
+          {$l("app.hide_valueless")}
+        </div>
+        <div>
+          <input type="checkbox" bind:checked={filterActiveOnly} />
+          {$l("app.active_only")}
+        </div>
+        <div>
+          <input type="checkbox" bind:checked={lightMode} /> 💡 {$l(
+            "app.lights"
+          )}
+        </div>
+        <div>
+          <input type="checkbox" bind:checked={fontMono} /> 🗏 Monospace
+        </div>
       </div>
     </div>
     <div class="status-bar align-center">
@@ -1182,12 +1190,7 @@
   .claimer {
     font-family: "Inter", Helvetica, sans-serif;
     font-size: 13px;
-    margin: 0;
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    background: rgba(139, 139, 139, 0.1);
+    background: #188689;
     padding: 10px;
     text-align: center;
 
@@ -1195,18 +1198,21 @@
       display: inline-block;
       padding: 0 6px;
     }
-  }
 
-  .lang {
-    cursor: pointer;
-    span:hover {
-      color: #777;
+    a:link,
+    a:visited {
+      color: #fff;
+    }
+
+    a:hover,
+    .lang span:hover {
+      color: #ddd;
+      cursor: pointer;
     }
   }
 
   .home {
     padding: 10px;
-    padding-top: 50px;
     &.light-mode {
       background: #fff;
       color: #000;
@@ -1265,13 +1271,13 @@
   }
 
   .address-field {
-    margin: 20px 0;
+    margin: 14px 0;
     input,
     button,
     label,
     select,
     .button {
-      margin: 0 10px;
+      margin: 4px 10px;
     }
     button {
       text-transform: uppercase;
@@ -1279,7 +1285,13 @@
   }
 
   #eth-address {
-    width: 350px;
+    width: 312px;
+  }
+
+  .controls {
+    > div {
+      display: inline-block;
+    }
   }
 
   table {
