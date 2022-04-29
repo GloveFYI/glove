@@ -89,11 +89,34 @@
         transactions: "Transaktionen",
       },
     },
+    es: {
+      app: {
+        pull: "extraer",
+        address: "Señas",
+        lights: "Luces",
+        active_only: "Solo Activa",
+        hide_valueless: "Ocultar sin Valor",
+        hide_balances: "Ocultar Saldos",
+        served_from: "Servido del",
+      },
+      sheet: {
+        asset: "Activo",
+        roi: "Rendimiento",
+        holdings: "Participaciones",
+        value: "Valor",
+        value_share: "Valor Porcentual",
+        investment: "Inversión",
+        allocation: "Asignación",
+        transactions: "Transacciones",
+      },
+    },
   });
 
   let lang = (navigator?.language || "en-US").split("-")[0];
 
   $: locale.set(lang);
+
+  let fontMono = true;
 
   // clients
 
@@ -800,7 +823,7 @@
   };
 </script>
 
-<body>
+<body class:sans={!fontMono}>
   <div class="home" class:light-mode={lightMode}>
     <div class="claimer">
       <span
@@ -810,10 +833,11 @@
         <a href="https://etherscan.io/myapikey" target="_blank">Get your key</a
         ></span
       >
-      | <a href="https://glove.fyi/manifest">Source & Contribute</a> |&emsp;
+      | <a href="https://glove.fyi/manifest">Source & Contribute</a> |
       <div class="lang">
         <span on:click={() => (lang = "en")}>EN</span> /
-        <span on:click={() => (lang = "de")}>DE</span>
+        <span on:click={() => (lang = "de")}>DE</span> /
+        <span on:click={() => (lang = "es")}>ES</span>
       </div>
     </div>
     <div class="address-field flex center">
@@ -866,6 +890,8 @@
         {$l("app.active_only")}
         &emsp;
         <input type="checkbox" bind:checked={lightMode} /> 💡 {$l("app.lights")}
+        {" "}
+        <input type="checkbox" bind:checked={fontMono} /> 🗏 Monospace
       </div>
     </div>
     <div class="status-bar align-center">
@@ -1087,7 +1113,7 @@
 </body>
 
 <style lang="scss">
-  @import url("https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&display=swap");
+  @import url("https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Inter:wght@400;600&display=swap");
 
   $primary: #fff;
   $background: #000;
@@ -1134,8 +1160,27 @@
   $green: #00ee00;
   $red: #ff5959;
 
+  body {
+    font-family: "Courier Prime", Helvetica, Arial, sans-serif;
+    input,
+    select,
+    button,
+    .button {
+      font-family: "Courier Prime";
+    }
+    &.sans {
+      font-family: "Inter", Helvetica, Arial, sans-serif;
+      input,
+      select,
+      button,
+      .button {
+        font-family: "Inter";
+      }
+    }
+  }
+
   .claimer {
-    font-family: Helvetica, sans-serif;
+    font-family: "Inter", Helvetica, sans-serif;
     font-size: 13px;
     margin: 0;
     position: absolute;
