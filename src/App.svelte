@@ -823,7 +823,7 @@
   };
 </script>
 
-<body class:sans={!fontMono}>
+<body class:sans={!fontMono} class:light-mode={lightMode}>
   <div class="claimer">
     <span
       >This version of glove is meant only for interactive UI Demo. <strong
@@ -832,14 +832,16 @@
       <a href="https://etherscan.io/myapikey" target="_blank">Get your key</a
       ></span
     >
-    | <a href="https://glove.fyi/manifest">Source & Contribute</a> |
+    |
+    <a href="https://glove.fyi/manifest" target="_blank">Source & Contribute</a>
+    |
     <div class="lang">
       <span on:click={() => (lang = "en")}>EN</span> /
       <span on:click={() => (lang = "de")}>DE</span> /
       <span on:click={() => (lang = "es")}>ES</span>
     </div>
   </div>
-  <div class="home" class:light-mode={lightMode}>
+  <main class="home">
     <div class="address-field flex center">
       {#if etherscan}
         <form class="address" on:submit|preventDefault={handleEthAddress}>
@@ -1114,7 +1116,7 @@
           </div>
         {/each}
     </div> -->
-  </div>
+  </main>
   <footer class="text-center">
     <small>{$l("app.served_from")} SiaSky (DeFS)</small>
   </footer>
@@ -1170,6 +1172,10 @@
 
   body {
     font-family: "Courier Prime", Helvetica, Arial, sans-serif;
+    background: #000;
+    color: #fff;
+    min-height: 100vh;
+
     input,
     select,
     button,
@@ -1185,34 +1191,7 @@
         font-family: "Inter";
       }
     }
-  }
 
-  .claimer {
-    font-family: "Inter", Helvetica, sans-serif;
-    font-size: 13px;
-    background: #188689;
-    padding: 10px;
-    text-align: center;
-
-    > * {
-      display: inline-block;
-      padding: 0 6px;
-    }
-
-    a:link,
-    a:visited {
-      color: #fff;
-    }
-
-    a:hover,
-    .lang span:hover {
-      color: #ddd;
-      cursor: pointer;
-    }
-  }
-
-  .home {
-    padding: 10px;
     &.light-mode {
       background: #fff;
       color: #000;
@@ -1249,6 +1228,28 @@
         color: #059e03;
       }
     }
+  }
+
+  .claimer {
+    font-family: "Inter", Helvetica, sans-serif;
+    font-size: 13px;
+    background: rgba(0, 0, 0, 0.1);
+    padding: 10px;
+    text-align: center;
+
+    > * {
+      display: inline-block;
+      padding: 0 6px;
+    }
+
+    .lang span:hover {
+      color: #777;
+      cursor: pointer;
+    }
+  }
+
+  main {
+    padding: 10px;
   }
 
   .transaction-box {
