@@ -1,6 +1,7 @@
 .DS_Store
 node_modules
 /public/build/
+/deploy/.env
 
 # local env files
 .env.local

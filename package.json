@@ -8,7 +8,8 @@
   "scripts": {
     "build": "rollup -c",
     "dev": "rollup -c -w",
-    "start": "sirv public --no-clear"
+    "start": "sirv public --no-clear",
+    "deploy": "node deploy/index.js"
   },
   "dependencies": {
     "buffer": "^6.0.3",
@@ -25,7 +26,9 @@
     "@rollup/plugin-commonjs": "^17.0.0",
     "@rollup/plugin-json": "^4.1.0",
     "@rollup/plugin-node-resolve": "^11.0.0",
+    "@skynetlabs/skynet-nodejs": "^2.5.1",
     "babel-eslint": "^10.1.0",
+    "dotenv": "^16.0.0",
     "eslint": "^6.7.2",
     "eslint-plugin-vue": "^7.0.0-0",
     "node-sass": "^7.0.1",
