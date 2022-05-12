@@ -330,7 +330,7 @@
   async function fetchEthPrices() {
     ethPrice = (await apiCoingecko("coins/ethereum")).market_data.current_price
       .usd;
-    gasPrice = (await apiGas()).fast / 10;
+    gasPrice = Math.round(parseInt((await etherscan.proxy.eth_gasPrice()).result) / Math.pow(10,9));
   }
 
   async function fetchTokenPrice({ id, startTime, endTime }) {
@@ -849,6 +849,7 @@
           <input
             id="eth-address"
             name="eth-address"
+            placeholder="Not your address if you're pro-privacy."
             type={hideBalances ? "password" : "text"}
             class="align-center"
             :value="ethAddress"
