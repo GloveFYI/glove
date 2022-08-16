@@ -1166,8 +1166,8 @@
 </body>
 
 <style lang="scss">
-  @import url("https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Inter:wght@400;600&display=swap");
   @import url("https://cdn.jsdelivr.net/npm/@xz/fonts@1/serve/liberation-mono.min.css");
+  @import url("https://rsms.me/inter/inter.css");
 
   $primary: #fff;
   $background: #000;
