@@ -1,8 +1,11 @@
 import svelte from 'rollup-plugin-svelte';
 import commonjs from '@rollup/plugin-commonjs';
 import resolve from '@rollup/plugin-node-resolve';
+import json from '@rollup/plugin-json';
 import livereload from 'rollup-plugin-livereload';
 import { terser } from 'rollup-plugin-terser';
+import sveltePreprocess from 'svelte-preprocess';
+import typescript from '@rollup/plugin-typescript';
 import css from 'rollup-plugin-css-only';
 import autoPreprocess from 'svelte-preprocess';
 
@@ -31,7 +34,7 @@ function serve() {
 
 export default {
   // external: ["querystring"],
-	input: 'src/main.js',
+	input: 'src/main.ts',
 	output: {
 		sourcemap: true,
 		format: 'iife',
@@ -44,6 +47,7 @@ export default {
   plugins: [
     svelte({
       preprocess: autoPreprocess(),
+			preprocess: sveltePreprocess({ sourceMap: !production }),
 			compilerOptions: {
 				// enable run-time checks when not in production
 				dev: !production
@@ -52,7 +56,6 @@ export default {
 		// we'll extract any component CSS out into
 		// a separate file - better for performance
     css({ output: 'bundle.css' }),
-
 
 		// If you have external dependencies installed from
 		// npm, you'll most likely need these plugins. In
@@ -64,7 +67,12 @@ export default {
       preferBuiltins: false,
 			dedupe: ['svelte']
 		}),
-		commonjs(),
+    commonjs(),
+    json(),
+		typescript({
+			sourceMap: !production,
+			inlineSources: !production
+    }),
 
 		// In dev mode, call `npm run start` once
 		// the bundle has been generated

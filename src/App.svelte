@@ -1,16 +1,16 @@
-<script>
+<script lang="ts">
   import { Buffer } from "buffer";
   import moment from "moment";
   import _ from "lodash";
   import { onMount } from "svelte";
-  import { ethers } from "ethers";
+  import { Contract, ethers } from "ethers";
   import etherscanApi from "etherscan-api";
   import namehash from "eth-ens-namehash";
 
   import { dictionary, locale, _ as l } from "svelte-i18n";
 
   const MAINNET = "";
-  const WETH_CONTRACT_ADDRESS = "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2";
+  const WETH_CONTRACT_ADDRESS = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
   const ENS_REGISTRY_CONTRACT_ADDRESS =
     "0x00000000000c2e074ec69a0dfb2997ba6c7d2e1e";
   const YEK = "YWE7CYXT15F5VBY9RQFV188JCXPQZ1M3GC";
@@ -22,6 +22,8 @@
   };
 
   window.Buffer = Buffer;
+
+  type ApiClient<T> = (endpoint: string, query: T) => Promise<unknown>;
 
   function makeApi({ baseUrl, baseHeader = {} }) {
     return (endpoint, query) => {
@@ -116,45 +118,70 @@
 
   $: locale.set(lang);
 
-  let fontMono = true;
+  let fontMono: boolean = true;
 
   // clients
 
   let statements = JSON.parse(localStorage.getItem("glove_statements"));
 
-  let apiCoingecko;
-  let apiDeepIndex;
-  let apiZeroX;
-  let apiChifra;
-  let apiGas;
-  let web3;
+  let apiCoingecko: ApiClient<Object>;
+  let apiDeepIndex: ApiClient<Object>;
+  let apiZeroX: ApiClient<Object>;
+  let apiChifra: ApiClient<Object>;
+  let apiGas: ApiClient<Object>;
+
+  let web3: unknown;
   let etherscan = null;
-  let loading = true;
-  let hideBalances = false;
-  let lightMode = true;
-  let filterMaxTrx = 10;
-  let filterActiveOnly = true;
-  let filterHideZeroValue = true;
+
+  let lightMode: boolean = true;
+  let loading: boolean = true;
+  let hideBalances: boolean = false;
+  let filterActiveOnly: boolean = true;
+  let filterHideZeroValue: boolean = true;
+  let filterMaxTrx: number = 10;
   let keys = {
     etherscan: "",
   };
 
   // data
 
-  let coingeckoList = [];
-  let gasPrice = 0;
-  let ethPrice = 0;
-  let ethAddress = "";
-  let balance = 0;
+  let coingeckoList: Array<CoingeckoItem> = [];
+  let gasPrice: number = 0;
+  let ethPrice: number = 0;
+  let ethAddress: Address = "";
+  let balance: number = 0;
+  let wethBalance: number = 0;
 
   let filteredTable = [];
-  let ethTxs = [];
+  let nativeTxs = [];
   let tokenTransfers = [];
   let tokensMetadata = [];
   let tokenTxsMap = [];
-  let tokenTxsRaw = {};
-  let tokenTxsPrices = {};
+  let tokenTxsRaw: {
+    [key: AssetSymbol]: Array<Transaction>;
+  } = {};
+  let tokenTxsPrices: {
+    [key: AssetSymbol]: {
+      symbol: string;
+      txHash: string;
+      value: number;
+      marketCap: number;
+      price: number;
+    }[];
+  } = {};
   let tokenMarket = {};
+
+  let tokenTxs: {
+    [key: AssetSymbol]: Array<{
+      token: AssetSymbol;
+      hash: string;
+      timestamp: number;
+      isIn: boolean;
+      isFree: boolean;
+      value: number;
+      decimalValue: number;
+    }>;
+  };
 
   let purchasePriceFallback =
     JSON.parse(localStorage.getItem("PRICE_FALLBACK")) || {};
@@ -167,14 +194,14 @@
     await timeout(50);
 
     try {
-      const [ethhTxs, bscTxs, polygonTxs] = await Promise.all([
+      const [ethTxs, bscTxs, polygonTxs] = await Promise.all([
         apiDeepIndex(endpoint, { ...query, chain: NETWORK.ETHEREUM_MAINNET }),
         apiDeepIndex(endpoint, { ...query, chain: NETWORK.BSC_MAINNET }),
         apiDeepIndex(endpoint, { ...query, chain: NETWORK.POLYGON_MAINNET }),
       ]);
 
       result = [
-        ...ethhTxs.result.map((x) => ({
+        ...ethTxs.result.map((x) => ({
           ...x,
           network: NETWORK.ETHEREUM_MAINNET,
         })),
@@ -225,17 +252,21 @@
 
     // let balance = await web3.eth.getBalance(ethAddress);
     // balance = web3.utils.fromWei(balance, 'ether');
-    let _balance = await etherscan.account.balance(ethAddress, "latest");
-    balance = ethers.utils.formatEther(_balance.result);
-    let _ethTxs = await etherscan.account.txlist(
-      ethAddress,
-      1,
-      "latest",
-      1,
-      1000,
-      "asc"
-    );
-    ethTxs = _ethTxs.result;
+
+    // native and wrapped balances
+    try {
+      const [_balance, _wethBalance, _nativeTxs] = await Promise.all([
+        etherscan.account.balance(ethAddress, "latest"),
+        etherscan.account.tokenbalance(ethAddress, "", WETH_CONTRACT_ADDRESS),
+        etherscan.account.txlist(ethAddress, 1, "latest", 1, 1000, "asc"),
+      ]);
+      console.log("weth balance", _wethBalance);
+      balance = Number(ethers.utils.formatEther(_balance.result));
+      wethBalance = Number(ethers.utils.formatEther(_wethBalance.result));
+      nativeTxs = _nativeTxs.result;
+    } catch (e) {
+      console.error(e);
+    }
 
     //// refactor zone start
 
@@ -267,10 +298,10 @@
       platform: "ethereum",
     }));
 
-    // @todo tokenTxRaw keys to be contract Address instead of symbol
+    // @todo tokenTxRaw keys to be contract Address instead of symbol, or tuple, we'll see
+    // a rewrite is due as more data sources are added
 
     let _tokenTxsRaw = _.groupBy([...tokenTxs.result], (tx) => {
-      console.log("tokenTxRawLatest", tx);
       // tx.contactAddress
       return tx.tokenSymbol;
     });
@@ -284,6 +315,8 @@
     _tokenTxsRaw = _.mapKeys(_tokenTxsRaw, function (value, key) {
       return key.toUpperCase();
     });
+
+    console.log("tokenTxRawLatest", _tokenTxsRaw);
 
     tokenTxsRaw = _tokenTxsRaw;
   }
@@ -330,10 +363,16 @@
   async function fetchEthPrices() {
     ethPrice = (await apiCoingecko("coins/ethereum")).market_data.current_price
       .usd;
-    gasPrice = Math.round(parseInt((await etherscan.proxy.eth_gasPrice()).result) / Math.pow(10,9));
+    gasPrice = Math.round(
+      parseInt((await etherscan.proxy.eth_gasPrice()).result) / Math.pow(10, 9)
+    );
   }
 
-  async function fetchTokenPrice({ id, startTime, endTime }) {
+  async function fetchTokenPrice({
+    id,
+    startTime,
+    endTime,
+  }): Promise<CoingeckoMarketChartItem | {}> {
     if (!id) return {};
     await timeout(200);
     let res = await apiCoingecko(`coins/${id}/market_chart/range`, {
@@ -344,7 +383,7 @@
     return res;
   }
 
-  async function fetchMarkets() {
+  async function fetchMarkets(): Promise<CoingeckoMarket[]> {
     const ids = Object.values(tokens)
       .map((token) => token.cgId)
       .join(",");
@@ -490,8 +529,8 @@
     tokenTxsRaw &&
     (() => {
       if (!ethAddress) return {};
-      return _.mapValues(tokenTxsRaw, function (trx) {
-        return trx.map((oneTrx) => ({
+      return _.mapValues(tokenTxsRaw, function (trxs) {
+        return trxs.map((oneTrx) => ({
           token: oneTrx.tokenSymbol,
           hash: oneTrx.hash,
           timestamp: Number(oneTrx.timeStamp),
@@ -509,7 +548,7 @@
     tokenTxs &&
     (() => {
       const filtered = _.mapValues(tokenTxs, function (trx) {
-        return _.take(trx, 10);
+        return _.take(trx, filterMaxTrx);
       });
       delete filtered.WETH;
       return {
@@ -584,7 +623,7 @@
               return price ? price * tx.decimalValue * (tx.isIn ? 1 : -1) : 0;
             })
             .reverse();
-          console.log(symbol, txValueSet);
+          // console.log(symbol, txValueSet);
           const alltimeHoldings = _.sum(
             txs.filter((tx) => tx.isIn).map((tx) => tx.decimalValue)
           );
@@ -713,7 +752,10 @@
 
   const watchTokenTxs = async () => {
     let pricesPromises = Object.keys(tokenTxsRaw).map((symbol) => {
-      const txPromises = tokenTxs[symbol].map((tx) =>
+      const txPromises: [
+        Promise<Transaction>,
+        Promise<CoingeckoMarketChartItem | {}>
+      ] = tokenTxs[symbol].map((tx) =>
         Promise.all([
           tx,
           tokens[symbol].cgId
@@ -909,11 +951,11 @@
       <span>
         {mask(eth(balance))} : {mask(fiat(Number(balance) * ethPrice))}
       </span>
-      {#if balances.WETH}
+      {#if wethBalance}
         &emsp;/&emsp;
         <span>
-          W{mask(eth(balances.WETH))} : {mask(
-            fiat(Number(balances.WETH) * ethPrice)
+          W{mask(eth(wethBalance))} : {mask(
+            fiat(Number(wethBalance) * ethPrice)
           )}
         </span>
       {/if}
@@ -1125,6 +1167,7 @@
 
 <style lang="scss">
   @import url("https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Inter:wght@400;600&display=swap");
+  @import url("https://cdn.jsdelivr.net/npm/@xz/fonts@1/serve/liberation-mono.min.css");
 
   $primary: #fff;
   $background: #000;
@@ -1172,7 +1215,7 @@
   $red: #ff5959;
 
   body {
-    font-family: "Courier Prime", Helvetica, Arial, sans-serif;
+    font-family: "Liberation Mono", Helvetica, Arial, sans-serif;
     background: #000;
     color: #fff;
     min-height: 100vh;
@@ -1181,7 +1224,7 @@
     select,
     button,
     .button {
-      font-family: "Courier Prime";
+      font-family: "Hack";
     }
     &.sans {
       font-family: "Inter", Helvetica, Arial, sans-serif;
