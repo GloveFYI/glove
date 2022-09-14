@@ -23,10 +23,29 @@
 
   window.Buffer = Buffer;
 
-  type ApiClient<T> = (endpoint: string, query: T) => Promise<unknown>;
+  type ApiClient<T> = (endpoint: string, query?: T) => Promise<any>;
 
-  function makeApi({ baseUrl, baseHeader = {} }) {
-    return (endpoint, query) => {
+  function asyncThrottle<F extends (...args: any[]) => Promise<any>>(
+    func: F,
+    wait?: number
+  ) {
+    const throttled = _.throttle((resolve, reject, args: Parameters<F>) => {
+      func(...args)
+        .then(resolve)
+        .catch(reject);
+    }, wait);
+    return (...args: Parameters<F>): ReturnType<F> =>
+      new Promise((resolve, reject) => {
+        throttled(resolve, reject, args);
+      }) as ReturnType<F>;
+  }
+
+  function makeApi(
+    { baseUrl, baseHeader = {} },
+    options: { rateLimitMs?: number } = {}
+  ) {
+    const { rateLimitMs } = options;
+    const apiCall = async (endpoint, query?) => {
       var querystring = "";
       if (query) {
         querystring = "?";
@@ -41,6 +60,9 @@
         res.json()
       );
     };
+    // to throttle async here
+    return apiCall;
+    // return rateLimitMs ? asyncThrottle(apiCall, rateLimitMs) : apiCall;
   }
 
   function timeout(ms) {
@@ -62,9 +84,9 @@
       sheet: {
         asset: "Asset",
         roi: "ROI",
-        holdings: "Holdings",
+        holdings: "Balance",
         value: "Value",
-        value_share: "Value Share",
+        value_share: "Value %",
         investment: "Investment",
         allocation: "Allocation",
         transactions: "Transactions",
@@ -126,7 +148,7 @@
 
   let apiCoingecko: ApiClient<Object>;
   let apiDeepIndex: ApiClient<Object>;
-  let apiZeroX: ApiClient<Object>;
+  let apiZeroX: { [key: NetworkKey]: ApiClient<Object> };
   let apiChifra: ApiClient<Object>;
   let apiGas: ApiClient<Object>;
 
@@ -363,6 +385,7 @@
   async function fetchEthPrices() {
     ethPrice = (await apiCoingecko("coins/ethereum")).market_data.current_price
       .usd;
+    console.log(ethPrice);
     gasPrice = Math.round(
       parseInt((await etherscan.proxy.eth_gasPrice()).result) / Math.pow(10, 9)
     );
@@ -811,9 +834,14 @@
     });
 
     // Coingecko: closed SaaS, restrictive API
-    apiCoingecko = makeApi({
-      baseUrl: "https://api.coingecko.com/api/v3/",
-    });
+    apiCoingecko = makeApi(
+      {
+        baseUrl: "https://api.coingecko.com/api/v3/",
+      },
+      {
+        rateLimitMs: 1000 / 8,
+      }
+    );
 
     // ??: multichain api
     apiDeepIndex = makeApi({
@@ -829,7 +857,7 @@
     };
 
     apiZeroX = _.mapValues(zeroXHosts, (baseUrl) => {
-      return makeApi({ baseUrl });
+      return makeApi({ baseUrl }, { rateLimitMs: 3000 / 2 });
     });
 
     apiGas = makeApi({
@@ -885,18 +913,24 @@
   </div>
   <main class="home">
     <div class="address-field flex center">
+      <img src="/glove-logo-app.svg" height="42" alt="" />
       {#if etherscan}
-        <form class="address" on:submit|preventDefault={handleEthAddress}>
+        <form
+          class="address flex row j-center a-center"
+          on:submit|preventDefault={handleEthAddress}
+        >
           <label for="eth-address">{$l("app.address")} / ENS</label>
-          <input
-            id="eth-address"
-            name="eth-address"
-            placeholder="Not your address if you're pro-privacy."
-            type={hideBalances ? "password" : "text"}
-            class="align-center"
-            :value="ethAddress"
-          />
-          <button>{$l("app.pull")}</button>
+          <div class="flex row">
+            <input
+              id="eth-address"
+              name="eth-address"
+              placeholder="Not your address if you're pro-privacy."
+              type={hideBalances ? "password" : "text"}
+              class="align-center"
+              :value="ethAddress"
+            />
+            <button>{$l("app.pull")}</button>
+          </div>
         </form>
       {:else}
         <form
@@ -924,7 +958,7 @@
           />
         </form>
       {/if}
-      <div class="controls">
+      <div class="controls flex a-center">
         <div>
           <input type="checkbox" bind:checked={hideBalances} />
           {$l("app.hide_balances")}
@@ -973,8 +1007,8 @@
       </span>
       &emsp;|&emsp;
       <span>
-        <strong>Exit {$l("sheet.value")}</strong>
-        {mask(fiat(totalLiquidValue))}
+        <strong>Liquid {$l("sheet.value")}</strong>
+        ~ {mask(fiat(totalLiquidValue))}
       </span>
       &emsp;|&emsp;
       <span>
@@ -1161,7 +1195,9 @@
     </div> -->
   </main>
   <footer class="text-center">
-    <small>{$l("app.served_from")} SiaSky (DeFS)</small>
+    <small
+      >Glove Demo (20% Freedom) - {$l("app.served_from")} SiaSky (DeFS)</small
+    >
   </footer>
 </body>
 
@@ -1194,7 +1230,7 @@
   }
 
   .flex.a-center {
-    justify-content: center;
+    align-items: center;
   }
 
   .flex.row {
@@ -1216,7 +1252,7 @@
 
   body {
     font-family: "Liberation Mono", Helvetica, Arial, sans-serif;
-    background: #000;
+    background: #0a0a0f;
     color: #fff;
     min-height: 100vh;
 
@@ -1224,7 +1260,7 @@
     select,
     button,
     .button {
-      font-family: "Hack";
+      font-family: "Liberation Mono";
     }
     &.sans {
       font-family: "Inter", Helvetica, Arial, sans-serif;
@@ -1296,6 +1332,10 @@
     padding: 10px;
   }
 
+  footer {
+    padding: 5px 0;
+  }
+
   .transaction-box {
     min-width: 250px;
     display: inline-block;
@@ -1316,16 +1356,28 @@
   }
 
   .address-field {
-    margin: 14px 0;
-    input,
-    button,
-    label,
-    select,
-    .button {
-      margin: 4px 10px;
+    margin: 14px auto;
+    > * {
+      padding: 0 10px;
     }
     button {
       text-transform: uppercase;
+    }
+    form.address {
+      label {
+        margin-right: 12px;
+      }
+      input {
+        border-radius: 3px 0 0 3px;
+      }
+      button {
+        border-radius: 0 3px 3px 0;
+      }
+    }
+    .controls {
+      display: inline-flex;
+      flex-wrap: wrap;
+      gap: 12px;
     }
   }
 
@@ -1361,7 +1413,7 @@
 
   table {
     th {
-      background: #111;
+      background: rgba(0, 0, 0, 0.1);
       position: sticky;
       top: 0;
       z-index: 1;
