@@ -768,10 +768,13 @@
     totalBalanceValue: [(i) => i.currentValue, _.sum],
   };
 
+  $: totalEthBalance = balance + wethBalance;
+  $: totalBaseValue = totalEthBalance * ethPrice; // later: calculate by denomination from options
   $: totalInvestment = dataTable && aggr(MUSH.totalInvestment);
   $: totalRoi = dataTable && aggr(MUSH.totalRoi) / totalInvestment;
   $: totalBalanceValue = dataTable && aggr(MUSH.totalBalanceValue);
   $: totalLiquidValue = totalBalanceValue;
+  $: netWorth = totalBaseValue + totalBalanceValue;
 
   const watchTokenTxs = async () => {
     let pricesPromises = Object.keys(tokenTxsRaw).map((symbol) => {
@@ -982,38 +985,41 @@
       </div>
     </div>
     <div class="status-bar align-center">
+      <span class="sigma">Σ --- &emsp;</span>
       <span>
-        {mask(eth(balance))} : {mask(fiat(Number(balance) * ethPrice))}
-      </span>
-      {#if wethBalance}
-        &emsp;/&emsp;
+        <strong>Net Worth</strong>
         <span>
-          W{mask(eth(wethBalance))} : {mask(
-            fiat(Number(wethBalance) * ethPrice)
-          )}
+          {fiat(netWorth)}
         </span>
-      {/if}
-      &emsp;|&emsp;
+      </span>
+      &emsp;—&emsp;
       <span>
         <strong>{$l("sheet.roi")}</strong>
         <span class:positive={totalRoi > 0} class:negative={totalRoi < 0}>
           {percentiple(totalRoi)}
         </span>
       </span>
-      &emsp;|&emsp;
+      &emsp;—&emsp;
       <span>
         <strong>{$l("sheet.value")}</strong>
         {mask(fiat(totalBalanceValue))}
       </span>
-      &emsp;|&emsp;
+      &emsp;—&emsp;
+      <!-- &emsp;|&emsp;
       <span>
         <strong>Liquid {$l("sheet.value")}</strong>
         ~ {mask(fiat(totalLiquidValue))}
-      </span>
-      &emsp;|&emsp;
+      </span> -->
       <span>
         <strong>{$l("sheet.investment")}</strong>
         <span>{mask(fiat(totalInvestment))}</span>
+      </span>
+      &emsp;|&emsp;
+      <span>
+        {mask(eth(balance))}
+        {#if wethBalance} + W{mask(eth(wethBalance))} {/if} : {mask(
+          fiat(totalEthBalance * ethPrice)
+        )}
       </span>
       &emsp; / ⛽ gε {gasPrice}
     </div>
