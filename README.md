@@ -66,3 +66,16 @@ each sellset as stx:
     each buyset as btx:
         result[tx.id][btx.id] = btx - tx
 
+
+### Notes for denominated accounting
+
+Glove POV: Chains are a classification to an asset, not something that chains it down, this will allow all engineering to adapt to maximal transaction analysis ex: stuff bridging around, delayed finality, innovations of future, unborn standards.
+
+#### metadata:: essential classifications
+
+- fiat pegged assets and wrappers (usd, tusd, usdc)
+- fiat derivative assets (non 1-to-1 stables, algos etc)
+- network tokens and wrappers (eth, weth, tbtc, wbtc)
+- non-denominated tokens (untradeable, illiquid, stakes etc)
+
+Details for strategy and application in gh organization project board.
