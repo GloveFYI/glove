@@ -34,6 +34,7 @@
     "dotenv": "^16.0.0",
     "eslint": "^6.7.2",
     "eslint-plugin-vue": "^7.0.0-0",
+    "ethereum-types": "^3.7.1",
     "node-sass": "^7.0.1",
     "rollup": "^2.3.4",
     "rollup-plugin-css-only": "^3.1.0",

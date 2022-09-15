@@ -7,7 +7,11 @@
   import etherscanApi from "etherscan-api";
   import namehash from "eth-ens-namehash";
 
+  import type { Coingecko } from "./types";
+
   import { dictionary, locale, _ as l } from "svelte-i18n";
+
+  import type EVM from "ethereum-types";
 
   const MAINNET = "";
   const WETH_CONTRACT_ADDRESS = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
@@ -167,7 +171,7 @@
 
   // data
 
-  let coingeckoList: Array<CoingeckoItem> = [];
+  let coingeckoList: Array<Coingecko.Item> = [];
   let gasPrice: number = 0;
   let ethPrice: number = 0;
   let ethAddress: Address = "";
@@ -395,7 +399,7 @@
     id,
     startTime,
     endTime,
-  }): Promise<CoingeckoMarketChartItem | {}> {
+  }): Promise<Coingecko.MarketChartItem | {}> {
     if (!id) return {};
     await timeout(200);
     let res = await apiCoingecko(`coins/${id}/market_chart/range`, {
@@ -406,7 +410,7 @@
     return res;
   }
 
-  async function fetchMarkets(): Promise<CoingeckoMarket[]> {
+  async function fetchMarkets(): Promise<Coingecko.Market[]> {
     const ids = Object.values(tokens)
       .map((token) => token.cgId)
       .join(",");
@@ -780,7 +784,7 @@
     let pricesPromises = Object.keys(tokenTxsRaw).map((symbol) => {
       const txPromises: [
         Promise<Transaction>,
-        Promise<CoingeckoMarketChartItem | {}>
+        Promise<Coingecko.MarketChartItem | {}>
       ] = tokenTxs[symbol].map((tx) =>
         Promise.all([
           tx,
@@ -1017,7 +1021,7 @@
       &emsp;|&emsp;
       <span>
         {mask(eth(balance))}
-        {#if wethBalance} + W{mask(eth(wethBalance))} {/if} : {mask(
+        {#if wethBalance} + W{mask(eth(wethBalance))} {/if} ~ {mask(
           fiat(totalEthBalance * ethPrice)
         )}
       </span>
