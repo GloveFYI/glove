@@ -1,3 +1,8 @@
+/**
+ * TrueBlocks - essential types
+ * https://trueblocks.io/api/
+ *  */
+
 import type EVM from 'ethereum-types';
 
 export namespace TrueBlocks {

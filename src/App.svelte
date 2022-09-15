@@ -156,7 +156,6 @@
   let apiChifra: ApiClient<Object>;
   let apiGas: ApiClient<Object>;
 
-  let web3: unknown;
   let etherscan = null;
 
   let lightMode: boolean = true;
@@ -241,15 +240,8 @@
     return result;
   }
 
-  async function fetchTransfers() {
-    let result = await web3.eth.getPastLogs({
-      fromBlock: 0,
-      toBlock: "latest",
-      address: ethAddress,
-      topics: [],
-    });
-    return result;
-  }
+  // was getting logs, use ethers if needed
+  async function fetchTransfers() {}
 
   function handleEtherscanKey(event) {
     const which = event.submitter.id;
@@ -275,9 +267,6 @@
       );
       ethAddress = "0x" + address.result.slice(-40);
     }
-
-    // let balance = await web3.eth.getBalance(ethAddress);
-    // balance = web3.utils.fromWei(balance, 'ether');
 
     // native and wrapped balances
     try {
@@ -345,10 +334,6 @@
     console.log("tokenTxRawLatest", _tokenTxsRaw);
 
     tokenTxsRaw = _tokenTxsRaw;
-  }
-
-  async function handleTrackContract() {
-    // const web3 = web3;
   }
 
   function addToWatchlist(symbol) {
@@ -828,7 +813,7 @@
   }
 
   onMount(() => {
-    // web3 = new ethers.providers.JsonRpcProvider(MAINNET);
+    // web3Provider = new ethers.providers.JsonRpcProvider(MAINNET);
 
     const etherscanKey = localStorage.getItem("ETHERSCAN_KEY");
     if (etherscanKey) {
