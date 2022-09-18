@@ -659,8 +659,6 @@
             : 0;
           const totalBalanceValue = totalBalance * currentPrice;
 
-          // const gain = totalValueOut + totalBalanceValue - totalInvestment; // work this later for cumulative roi
-
           const gain = totalBalanceValue + returnValue - totalInvestment;
           const unrealGain = alltimeHoldings * currentPrice - totalInvestment;
           let roi = gain / totalInvestment || 0;
