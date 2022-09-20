@@ -28,19 +28,22 @@ export namespace TrueBlocks {
   export type ReconciliationType = 'prevdiff-partial' | 'partial-nextdiff' | 'partial-partial';
 
   export type Statement = {
+
     blockNumber: EVM.BlockWithoutTransactionData['number'];
     transactionIndex: EVM.Transaction['transactionIndex'];
     timestamp: EVM.BlockWithoutTransactionData['timestamp'];
     assetAddr: ContractAddress<any>;
     assetSymbol: AssetSymbol;
     decimals: number;
-    prevBlk: EVM.BlockWithoutTransactionData['number'],
-    prevBlkBal: string,
-    begBal: string,
-    begBalDiff: string,
-    amountIn: string,
-    amountOut: string,
-    internalIn: string,
+
+    prevBlk: EVM.BlockWithoutTransactionData['number'];
+    prevBlkBal: string;
+    begBal: string;
+    begBalDiff: string;
+
+    amountIn: string;
+    amountOut: string;
+    internalIn: string;
     internalOut: string;
     selfDestructIn: string;
     selfDestructOut: string;
@@ -49,16 +52,20 @@ export namespace TrueBlocks {
     minerTxFeeIn: string;
     minerUncleRewardIn: string;
     prefundIn: string;
+
     spotPrice: number;
     priceSource: string;
+
     gasCostOut: string;
     endBal: string;
     totalIn: string;
     totalOut: string;
     totalOutLessGas: string;
+
     amountNet: string;
     endBalCalc: string;
     endBalDiff: string;
+
     reconciliationType: ReconciliationType;
     reconciled: boolean;
   }
@@ -67,7 +74,7 @@ export namespace TrueBlocks {
     status: null | 0 | 1; // null if tx precedes Byzantium
     contractAddress: Address;
     gasUsed: EVM.TransactionReceipt['cumulativeGasUsed'];
-    logs: Array<Log>
+    logs: Array<Log>;
   }
 
   export interface Transaction {
