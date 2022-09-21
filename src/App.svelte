@@ -76,7 +76,8 @@
   dictionary.set({
     en: {
       app: {
-        notice: "",
+        claimer_main: "Accounting is KNOWN to be mostly incorrect.",
+        privacy_warn: "Not your address if you're pro-privacy",
         pull: "🧤",
         address: "Address",
         lights: "Lights",
@@ -100,6 +101,7 @@
     },
     de: {
       app: {
+        privacy_warn: "für den Datenschutz? Die Adresse eines anderen!",
         pull: "🧤",
         address: "Anschrift",
         lights: "Beleuchtung",
@@ -123,6 +125,7 @@
     },
     es: {
       app: {
+        privacy_warn: "pro-privacidad? ¡La cuenta de otra persona!",
         pull: "🧤",
         address: "Señas",
         lights: "Luces",
@@ -142,6 +145,30 @@
         investment: "Inversión",
         allocation: "Asignación",
         transactions: "Transacciones",
+      },
+    },
+    ar: {
+      app: {
+        privacy_warn: "!مؤيدة للخصوصية؟ عنوان شخص آخر",
+        pull: "🧤",
+        address: "عنوان",
+        lights: "إضاءة",
+        filter_active: "فعال",
+        filter_valued: "> 🪙1",
+        filter_past: "الماضي",
+        filter_illiquid: "ميزة",
+        hide_balances: "أرصدة إخفاء",
+        served_from: "خدم من",
+      },
+      sheet: {
+        asset: "شىء ثمين",
+        roi: "عائد الاستثمار",
+        holdings: "المقتنيات",
+        value: "القيمة",
+        value_share: "نسبة القيمة",
+        investment: "قيمة الاستثمار",
+        allocation: "قيمة التخصيص",
+        transactions: "المعاملات",
       },
     },
   });
@@ -908,7 +935,8 @@
       🌍&emsp;
       <span on:click={() => (lang = "en")}>EN</span> /
       <span on:click={() => (lang = "de")}>DE</span> /
-      <span on:click={() => (lang = "es")}>ES</span>
+      <span on:click={() => (lang = "es")}>ES</span> /
+      <span on:click={() => (lang = "ar")}>AR</span>
     </div>
   </div>
   <main class="home">
@@ -924,7 +952,7 @@
             <input
               id="eth-address"
               name="eth-address"
-              placeholder="Not your address if you're pro-privacy."
+              placeholder={$l("app.privacy_warn")}
               type={hideBalances ? "password" : "text"}
               class="align-center"
               :value="ethAddress"
