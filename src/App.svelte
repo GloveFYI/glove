@@ -77,11 +77,13 @@
     en: {
       app: {
         notice: "",
-        pull: "pull",
+        pull: "🧤",
         address: "Address",
         lights: "Lights",
-        active_only: "Active Only",
-        hide_valueless: "Hide Valueless",
+        filter_active: "Active",
+        filter_valued: "> 🪙1",
+        filter_past: "Past",
+        filter_illiquid: "Illiquid",
         hide_balances: "Hide Balances",
         served_from: "Served from",
       },
@@ -98,11 +100,13 @@
     },
     de: {
       app: {
-        pull: "einziehen",
+        pull: "🧤",
         address: "Anschrift",
         lights: "Beleuchtung",
-        active_only: "Nur aktiv",
-        hide_valueless: "Verstecke wertlose",
+        filter_active: "Aktiv",
+        filter_valued: "> 🪙1",
+        filter_past: "Vorbei",
+        filter_illiquid: "Illiquidität",
         hide_balances: "Guthaben ausblenden",
         served_from: "Serviert von",
       },
@@ -119,11 +123,13 @@
     },
     es: {
       app: {
-        pull: "extraer",
+        pull: "🧤",
         address: "Señas",
         lights: "Luces",
-        active_only: "Solo Activa",
-        hide_valueless: "Ocultar sin Valor",
+        filter_active: "Activa",
+        filter_valued: "> 🪙1",
+        filter_past: "La historia",
+        filter_illiquid: "Ilíquido",
         hide_balances: "Ocultar Saldos",
         served_from: "Servido del",
       },
@@ -161,8 +167,10 @@
   let lightMode: boolean = true;
   let loading: boolean = true;
   let hideBalances: boolean = false;
-  let filterActiveOnly: boolean = true;
-  let filterHideZeroValue: boolean = true;
+  let filterActive: boolean = true;
+  let filterPast: boolean = false;
+  let filterValued: boolean = true;
+  let filterIlliquid: boolean = false;
   let filterMaxTrx: number = 10;
   let keys = {
     etherscan: "",
@@ -731,14 +739,15 @@
   $: {
     filteredTable = dataTable
       .filter((line) => {
-        let condition = true;
+        let condition = false;
         const hasHolding = line.numbers.holdings > 0;
-        if (filterHideZeroValue && hasHolding) {
-          condition = line.numbers.currentValue >= 1;
+        if (filterActive && hasHolding) {
+          condition = filterValued ? line.numbers.currentValue >= 1 : true;
         }
-        if (filterActiveOnly && !hasHolding) {
-          condition = false;
+        if (filterPast && !hasHolding) {
+          condition = true;
         }
+
         return condition;
       })
       .reverse();
@@ -886,9 +895,9 @@
 <body class:sans={!fontMono} class:light-mode={lightMode}>
   <div class="claimer">
     <span
-      >This version of glove is meant only for interactive UI Demo. <strong
+      >PRE-ALPHA: Interactive UI Demo Only — <strong
         >Accounting is KNOWN to be mostly incorrect</strong
-      >. Addresses go through etherscan, prices come from coingecko.
+      >.&emsp; 3rd Parties: Address-Tx — Etherscan, Prices — Coingecko. &emsp;
       <a href="https://etherscan.io/myapikey" target="_blank">Get your key</a
       ></span
     >
@@ -896,6 +905,7 @@
     <a href="https://glove.fyi/manifest" target="_blank">Source & Contribute</a>
     |
     <div class="lang">
+      🌍&emsp;
       <span on:click={() => (lang = "en")}>EN</span> /
       <span on:click={() => (lang = "de")}>DE</span> /
       <span on:click={() => (lang = "es")}>ES</span>
@@ -949,20 +959,34 @@
         </form>
       {/if}
       <div class="controls flex a-center">
+        ☂&emsp;
+        <div>
+          <input type="checkbox" bind:checked={filterActive} />
+          {$l("app.filter_active")}
+        </div>
+        <div>
+          <input type="checkbox" bind:checked={filterPast} />
+          {$l("app.filter_past")}
+        </div>
+        <div>
+          <input type="checkbox" bind:checked={filterIlliquid} disabled />
+          {$l("app.filter_illiquid")}
+        </div>
+        <div>
+          <input
+            type="checkbox"
+            bind:checked={filterValued}
+            disabled={!(filterActive || filterPast)}
+          />
+          {$l("app.filter_valued")}
+        </div>
+        &emsp;—&emsp;
         <div>
           <input type="checkbox" bind:checked={hideBalances} />
           {$l("app.hide_balances")}
         </div>
         <div>
-          <input type="checkbox" bind:checked={filterHideZeroValue} />
-          {$l("app.hide_valueless")}
-        </div>
-        <div>
-          <input type="checkbox" bind:checked={filterActiveOnly} />
-          {$l("app.active_only")}
-        </div>
-        <div>
-          <input type="checkbox" bind:checked={lightMode} /> 💡 {$l(
+          <input type="checkbox" bind:checked={lightMode} /> 🪔 {$l(
             "app.lights"
           )}
         </div>
@@ -1307,7 +1331,9 @@
     font-family: "Inter", Helvetica, sans-serif;
     font-size: 13px;
     background: rgba(0, 0, 0, 0.1);
-    padding: 10px;
+    padding: 5px 10px;
+    margin: 0 10px;
+    border-radius: 0 0 20px 20px;
     text-align: center;
 
     > * {
