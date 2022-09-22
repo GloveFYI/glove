@@ -10,6 +10,7 @@
   import type { Coingecko } from "./types";
 
   import { dictionary, locale, _ as l } from "svelte-i18n";
+  import { translations } from "./locales";
 
   import type EVM from "ethereum-types";
 
@@ -73,105 +74,7 @@
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
-  dictionary.set({
-    en: {
-      app: {
-        claimer_main: "Accounting is KNOWN to be mostly incorrect.",
-        privacy_warn: "Not your address if you're pro-privacy",
-        pull: "🧤",
-        address: "Address",
-        lights: "Lights",
-        filter_active: "Active",
-        filter_valued: "> 🪙1",
-        filter_past: "Past",
-        filter_illiquid: "Illiquid",
-        hide_balances: "Hide Balances",
-        served_from: "Served from",
-      },
-      sheet: {
-        asset: "Asset",
-        roi: "ROI",
-        holdings: "Balance",
-        value: "Value",
-        value_share: "Value %",
-        investment: "Investment",
-        allocation: "Allocation",
-        transactions: "Transactions",
-      },
-    },
-    de: {
-      app: {
-        privacy_warn: "für den Datenschutz? Die Adresse eines anderen!",
-        pull: "🧤",
-        address: "Anschrift",
-        lights: "Beleuchtung",
-        filter_active: "Aktiv",
-        filter_valued: "> 🪙1",
-        filter_past: "Vorbei",
-        filter_illiquid: "Illiquidität",
-        hide_balances: "Guthaben ausblenden",
-        served_from: "Serviert von",
-      },
-      sheet: {
-        asset: "Vermögenswert",
-        roi: "Anlagenrendite",
-        holdings: "Vermögensbestände",
-        value: "Wert",
-        value_share: "Wert Prozent",
-        investment: "Anlagebetrag",
-        allocation: "Zuweisung",
-        transactions: "Transaktionen",
-      },
-    },
-    es: {
-      app: {
-        privacy_warn: "pro-privacidad? ¡La cuenta de otra persona!",
-        pull: "🧤",
-        address: "Señas",
-        lights: "Luces",
-        filter_active: "Activa",
-        filter_valued: "> 🪙1",
-        filter_past: "La historia",
-        filter_illiquid: "Ilíquido",
-        hide_balances: "Ocultar Saldos",
-        served_from: "Servido del",
-      },
-      sheet: {
-        asset: "Activo",
-        roi: "Rendimiento",
-        holdings: "Participaciones",
-        value: "Valor",
-        value_share: "Valor Porcentual",
-        investment: "Inversión",
-        allocation: "Asignación",
-        transactions: "Transacciones",
-      },
-    },
-    ar: {
-      app: {
-        privacy_warn: "!مؤيدة للخصوصية؟ عنوان شخص آخر",
-        pull: "🧤",
-        address: "عنوان",
-        lights: "إضاءة",
-        filter_active: "فعال",
-        filter_valued: "> 🪙1",
-        filter_past: "الماضي",
-        filter_illiquid: "ميزة",
-        hide_balances: "أرصدة إخفاء",
-        served_from: "خدم من",
-      },
-      sheet: {
-        asset: "شىء ثمين",
-        roi: "عائد الاستثمار",
-        holdings: "المقتنيات",
-        value: "القيمة",
-        value_share: "نسبة القيمة",
-        investment: "قيمة الاستثمار",
-        allocation: "قيمة التخصيص",
-        transactions: "المعاملات",
-      },
-    },
-  });
+  dictionary.set(translations);
 
   let lang = (navigator?.language || "en-US").split("-")[0];
 
@@ -924,7 +827,8 @@
     <span
       >PRE-ALPHA: Interactive UI Demo Only — <strong
         >Accounting is KNOWN to be mostly incorrect</strong
-      >.&emsp; 3rd Parties: Address-Tx — Etherscan, Prices — Coingecko. &emsp;
+      >.&emsp; ⚠️ 3rd Parties: Address-Tx — Etherscan, Prices — Coingecko.
+      &emsp;
       <a href="https://etherscan.io/myapikey" target="_blank">Get your key</a
       ></span
     >
@@ -936,7 +840,8 @@
       <span on:click={() => (lang = "en")}>EN</span> /
       <span on:click={() => (lang = "de")}>DE</span> /
       <span on:click={() => (lang = "es")}>ES</span> /
-      <span on:click={() => (lang = "ar")}>AR</span>
+      <span on:click={() => (lang = "ar")}>AR</span> /
+      <span on:click={() => (lang = "id")}>ID</span>
     </div>
   </div>
   <main class="home">
