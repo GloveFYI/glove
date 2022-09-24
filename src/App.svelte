@@ -825,8 +825,8 @@
 <body class:sans={!fontMono} class:light-mode={lightMode}>
   <div class="claimer">
     <span
-      >PRE-ALPHA: Interactive UI Demo Only — <strong
-        >Accounting is KNOWN to be mostly incorrect</strong
+      >PRE-ALPHA: Interactive UI Demo Only — <strong dir={(lang === "ar") ? "rtl" : "ltr" }
+        >{$l("app.claimer_main")}</strong
       >.&emsp; ⚠️ 3rd Parties: Address-Tx — Etherscan, Prices — Coingecko.
       &emsp;
       <a href="https://etherscan.io/myapikey" target="_blank">Get your key</a
@@ -839,6 +839,7 @@
       🌍&emsp;
       <span on:click={() => (lang = "en")}>EN</span> /
       <span on:click={() => (lang = "de")}>DE</span> /
+      <span on:click={() => (lang = "fr")}>FR</span> /
       <span on:click={() => (lang = "es")}>ES</span> /
       <span on:click={() => (lang = "ar")}>AR</span> /
       <span on:click={() => (lang = "id")}>ID</span>
@@ -911,7 +912,7 @@
             bind:checked={filterValued}
             disabled={!(filterActive || filterPast)}
           />
-          {$l("app.filter_valued")}
+          🪙 &gt; 1
         </div>
         &emsp;—&emsp;
         <div>
@@ -933,7 +934,7 @@
       <span>
         <strong>Net Worth</strong>
         <span>
-          {fiat(netWorth)}
+          {mask(fiat(netWorth))}
         </span>
       </span>
       &emsp;—&emsp;

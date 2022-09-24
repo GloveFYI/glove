@@ -1,13 +1,12 @@
 export const translations = {
   en: {
     app: {
-      claimer_main: "Accounting is KNOWN to be mostly incorrect.",
+      claimer_main: "Accounting is KNOWN to be mostly incorrect",
       privacy_warn: "Not your address if you're pro-privacy",
       pull: "🧤",
       address: "Address",
       lights: "Lights",
       filter_active: "Active",
-      filter_valued: "> 🪙1",
       filter_past: "Past",
       filter_illiquid: "Illiquid",
       hide_balances: "Hide Balances",
@@ -26,12 +25,12 @@ export const translations = {
   },
   de: {
     app: {
+      claimer_main: "Die Buchhaltung ist BEKANNT, dass sie größtenteils falsch ist",
       privacy_warn: "für den Datenschutz? Die Adresse eines anderen!",
       pull: "🧤",
       address: "Anschrift",
       lights: "Beleuchtung",
       filter_active: "Aktiv",
-      filter_valued: "> 🪙1",
       filter_past: "Vorbei",
       filter_illiquid: "Illiquidität",
       hide_balances: "Guthaben ausblenden",
@@ -50,12 +49,12 @@ export const translations = {
   },
   es: {
     app: {
+      claimer_main: "Se sabe que la contabilidad es en su mayoría incorrecta",
       privacy_warn: "pro-privacidad? ¡La cuenta de otra persona!",
       pull: "🧤",
       address: "Señas",
       lights: "Luces",
       filter_active: "Activa",
-      filter_valued: "> 🪙1",
       filter_past: "La historia",
       filter_illiquid: "Ilíquido",
       hide_balances: "Ocultar Saldos",
@@ -72,14 +71,38 @@ export const translations = {
       transactions: "Transacciones",
     },
   },
+  fr: {
+    app: {
+      claimer_main: "La comptabilité est connue pour être la plupart du temps incorrecte",
+      privacy_warn: "Pro-vie privée ? L'adresse de quelqu'un d'autre.",
+      pull: "🧤",
+      address: "Adresse",
+      lights: "Éclairage",
+      filter_active: "Actif",
+      filter_past: "Passé",
+      filter_illiquid: "Illiquide",
+      hide_balances: "Masquer les Soldes",
+      served_from: "Servi depuis",
+    },
+    sheet: {
+      asset: "Avoir",
+      roi: "ROI",
+      holdings: "Solde",
+      value: "La valeur",
+      value_share: "La valeur %",
+      investment: "Investissement",
+      allocation: "Allocation",
+      transactions: "Transactions",
+    },
+  },
   ar: {
     app: {
+      claimer_main: "من المعروف أن المحاسبة غير صحيحة في الغالب",
       privacy_warn: "!مؤيدة للخصوصية؟ عنوان شخص آخر",
       pull: "🧤",
       address: "عنوان",
       lights: "إضاءة",
       filter_active: "فعال",
-      filter_valued: "> 🪙1",
       filter_past: "الماضي",
       filter_illiquid: "ميزة",
       hide_balances: "أرصدة إخفاء",
@@ -98,12 +121,12 @@ export const translations = {
   },
   id: {
     app: {
+      claimer_main: "Akuntansi DIKENAL sebagian besar tidak benar",
       privacy_warn: "Bukan alamat Anda jika Anda pro-privasi",
       pull: "🧤",
       address: "Alamat",
       lights: "Lampu",
       filter_active: "Aktif",
-      filter_valued: "> 🪙1",
       filter_past: "Sudah",
       filter_illiquid: "Tidak likuid",
       hide_balances: "Sembunyikan saldo",
