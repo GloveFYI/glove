@@ -825,8 +825,8 @@
 <body class:sans={!fontMono} class:light-mode={lightMode}>
   <div class="claimer">
     <span
-      >PRE-ALPHA: Interactive UI Demo Only — <strong dir={(lang === "ar") ? "rtl" : "ltr" }
-        >{$l("app.claimer_main")}</strong
+      >PRE-ALPHA: Interactive UI Demo Only — <strong
+        dir={lang === "ar" ? "rtl" : "ltr"}>{$l("app.claimer_main")}</strong
       >.&emsp; ⚠️ 3rd Parties: Address-Tx — Etherscan, Prices — Coingecko.
       &emsp;
       <a href="https://etherscan.io/myapikey" target="_blank">Get your key</a
@@ -893,39 +893,42 @@
         </form>
       {/if}
       <div class="controls flex a-center">
-        ☂&emsp;
         <div>
-          <input type="checkbox" bind:checked={filterActive} />
-          {$l("app.filter_active")}
+          ☂&emsp;
+          <div>
+            <input type="checkbox" bind:checked={filterActive} />
+            {$l("app.filter_active")}
+          </div>
+          <div>
+            <input type="checkbox" bind:checked={filterPast} />
+            {$l("app.filter_past")}
+          </div>
+          <div>
+            <input type="checkbox" bind:checked={filterIlliquid} disabled />
+            {$l("app.filter_illiquid")}
+          </div>
+          <div>
+            <input
+              type="checkbox"
+              bind:checked={filterValued}
+              disabled={!(filterActive || filterPast)}
+            />
+            🪙 &gt; 1
+          </div>
         </div>
         <div>
-          <input type="checkbox" bind:checked={filterPast} />
-          {$l("app.filter_past")}
-        </div>
-        <div>
-          <input type="checkbox" bind:checked={filterIlliquid} disabled />
-          {$l("app.filter_illiquid")}
-        </div>
-        <div>
-          <input
-            type="checkbox"
-            bind:checked={filterValued}
-            disabled={!(filterActive || filterPast)}
-          />
-          🪙 &gt; 1
-        </div>
-        &emsp;—&emsp;
-        <div>
-          <input type="checkbox" bind:checked={hideBalances} />
-          {$l("app.hide_balances")}
-        </div>
-        <div>
-          <input type="checkbox" bind:checked={lightMode} /> 🪔 {$l(
-            "app.lights"
-          )}
-        </div>
-        <div>
-          <input type="checkbox" bind:checked={fontMono} /> 🗏 Monospace
+          <div>
+            <input type="checkbox" bind:checked={hideBalances} />
+            {$l("app.hide_balances")}
+          </div>
+          <div>
+            <input type="checkbox" bind:checked={lightMode} /> 🪔 {$l(
+              "app.lights"
+            )}
+          </div>
+          <div>
+            <input type="checkbox" bind:checked={fontMono} /> 🗏 Monospace
+          </div>
         </div>
       </div>
     </div>
@@ -1331,6 +1334,15 @@
       display: inline-flex;
       flex-wrap: wrap;
       gap: 12px;
+      > div {
+        display: inline-flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: center;
+        border-radius: 3px;
+        padding: 4px 12px;
+        box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1);
+      }
     }
   }
 
