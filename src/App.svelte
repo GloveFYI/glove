@@ -1261,6 +1261,12 @@
       .positive {
         color: #059e03;
       }
+
+      .controls {
+        > div {
+          box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1);
+        }
+      }
     }
   }
 
@@ -1341,7 +1347,7 @@
         align-items: center;
         border-radius: 3px;
         padding: 4px 12px;
-        box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.2);
       }
     }
   }

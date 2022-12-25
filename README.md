@@ -1,16 +1,40 @@
+![](https://raw.githubusercontent.com/GloveFYI/glove/main/public/glove-logo-app.svg)
 
-## State of the codebase
+# State of the codebase
 
-**Glove** in present from, originates from an unconventional method of creating web experiences that don't lie and cheat their receiver. It is in its infancy, with very limited entities supporting its development.
+**Glove** in present from, originates from an unconventional method of creating web experiences that don't lie and cheat their receiver.
 
-It is being driven by an early engineering M.O., which is backed by [first principles defined here](https://pint.network/t/pint-network-genesis/). Most of the work on codebase predates both, and was carried out intermittently through 2021, to derive measures from on-chain data that are not conveniently, freely, and openly available.
+It is being driven by an early engineering M.O., which is backed by [first principles defined here](https://mirror.xyz/0x04F264eCb7ea1411726236675E88F04DC6421164/Wve-yAWeLcEhhOG_Rxgu6HWe0z7CAQXmaQjjxYtPRhY). Most of the work on codebase predates both, and was carried out intermittently through 2021, to derive measures from on-chain data that are not conveniently, freely, and openly available.
 
-[Must Read the M.O.](https://pint.network/t/first-invention-mo/)
+[Must Read the M.O.](https://mirror.xyz/0x04F264eCb7ea1411726236675E88F04DC6421164/jhpNPrj0dwT_5YC1u25sigwrXXOcgYVbe5Xld8B5tPs)
 
 **Almost everything that makes up the ultimate minimal experience is yet to be implemented.** Changes should roll out eventually as more content is created to support specifications.
 
+# Help yourself
 
-## Contribution
+Even though glove hosts a mirror on centralized TLD at [app.glove.fyi](https://app.glove.fyi) for people of the past, glovers are a force driving you to help yourself for your information! Here's how:
+
+```bash
+echo 'the world is tearing itself apart, survival is in the terminal'
+echo 'start by installing git and node yourself, use nvm!'
+
+# baby glover succeeds in running `node -v` "\^_^/"
+
+git clone git@github.com:GloveFYI/glove.git --depth=1
+
+cd glove && yarn
+
+echo 'wait a millisecond'
+
+yarn dev
+
+```
+
+Open the `localhost` link in browser and pin the tab.
+
+Once in a while, run `git pull` and rerun `yarn dev`.
+
+# Contribution
 
 Glove competes with the status-quo, it breathes "yes can do". Competition goes fast, unnatural it is, friction there is, bright it burns. Time is mortal, the quicker ones wither sooner and die.
 
@@ -28,54 +52,31 @@ If you, by an off-chance wish to contribute today, know that glove is running on
 
 And obviously if you look forward to using it, please join [discord](https://discord.gg/MdmM2WFH) to stay connected.
 
+## Send monies!
 
-----
+Glove currently seeks support from `pintnetwork.eth` and 0xAdil at `0x04F264eCb7ea1411726236675E88F04DC6421164`.
 
-### Mindmapping for correct ROIs
+You can help Glove through grants to either!
 
-0 b: 1 token at 1 usd at 1m cap
-1 b: 4 token at 2 usd at 5m cap
-2 s: 2 token at 4 usd at 15m cap
-3 s: 1 token at 6 usd at 25m cap
-4 b: 1 token at 8 usd at 30m cap
+# Concepts
 
-current price = 10usd
-current cap = 60m
-
-
-// [ stxId, btxId, amount, balance, days, price_multiple, cap_multiple ]
-[ 2, 0, 1, 0, xx, 4.0, 15.0  ] // derived money_multiple = 15 / 4 = 3.75 i.e. inflation
-[ 2, 1, 1, 3, xx, 2.0, 03.0 ] // 3 / 2 = 1.5
-[ 3, 1, 1, 2, xx, 3.0, 05.0 ] // 5 / 3 = 1.66
-
-Buy balances that are still non-zero, are then calculated against current price
-
-format // btx: amount, price_mul, cap_mul
-
-1: 2, 5.0, 12.0 // 2.4
-4: 1, 1.25, 2.0 // 1.6
-
-(3.75 + 1.5 + 1.66 + (2.4*2) + 1.6) / 6 = 2.218 (cumulative multiple of inflation)
-
-in this case: tx#1, only 2 tokens out of 4, and subsequent buys i.e. tx#4 will be accounted for calculations against current holding
-
-// hideous incomplete reference algo, implement sanely
-
-each sellset as stx:
-    buyset = prior buy transactions
-    each buyset as btx:
-        result[tx.id][btx.id] = btx - tx
-
-
-### Notes for denominated accounting
+## Denominated accounting
 
 Glove POV: Chains are a classification to an asset, not something that chains it down, this will allow all engineering to adapt to maximal transaction analysis ex: stuff bridging around, delayed finality, innovations of future, unborn standards.
 
-#### metadata:: essential classifications
+### metadata:: essential classifications
 
 - fiat pegged assets and wrappers (usd, tusd, usdc)
 - fiat derivative assets (non 1-to-1 stables, algos etc)
 - network tokens and wrappers (eth, weth, tbtc, wbtc)
 - non-denominated tokens (untradeable, illiquid, stakes etc)
 
-Details for strategy and application in gh organization project board.
+# Glove Arenas
+
+- [Gloveering Board](https://github.com/orgs/GloveFYI/projects/1)
+
+- [Repo issues](https://github.com/GloveFYI/glove/issues)
+
+- [Discord](https://discord.gg/MdmM2WFH)
+
+- [Blog](https://blog.glove.fyi/)
