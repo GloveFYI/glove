@@ -52,12 +52,6 @@ If you, by an off-chance wish to contribute today, know that glove is running on
 
 And obviously if you look forward to using it, please join [discord](https://discord.gg/MdmM2WFH) to stay connected.
 
-## Send monies!
-
-Glove currently seeks support from `pintnetwork.eth` and 0xAdil at `0x04F264eCb7ea1411726236675E88F04DC6421164`.
-
-You can help Glove through grants to either!
-
 # Concepts
 
 ## Denominated accounting
