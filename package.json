@@ -53,8 +53,8 @@
     "vitest-browser-svelte": "^0.1.0"
   },
   "pnpm": {
-          "onlyBuiltDependencies": [
-                  "esbuild"
-          ]
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
   }
 }
