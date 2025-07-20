@@ -14,6 +14,18 @@ It is being driven by an early engineering M.O., which is backed by [first princ
 
 Even though glove hosts a mirror on centralized TLD at [app.glove.fyi](https://app.glove.fyi) for people of the past, glovers are a force driving you to help yourself for your information! Here's how:
 
+## Use locally
+
+1. Download latest release from [Releases](https://github.com/GloveFYI/glove/releases).
+2. Extract the zipfile.
+  ```
+  unzip glove-<version>.fyi.zip
+  ```
+3. It's recommended to install node.js, then simply navigate to the extracted directory, run `npx http-server -p 4394` and access the app at the link shown.
+
+> `node.js` installation can be troublesome on OSX if done via `brew`, consider using `nvm`.
+
+## Tinker locally
 ```bash
 echo 'the world is tearing itself apart, survival is in the terminal'
 echo 'start by installing git and node yourself, use nvm!'
@@ -22,17 +34,16 @@ echo 'start by installing git and node yourself, use nvm!'
 
 git clone git@github.com:GloveFYI/glove.git --depth=1
 
-cd glove && yarn
+cd glove && pnpm install
 
 echo 'wait a millisecond'
 
-yarn dev
-
+pnpm dev
 ```
 
 Open the `localhost` link in browser and pin the tab.
 
-Once in a while, run `git pull` and rerun `yarn dev`.
+Once in a while, run `git pull`.
 
 # Contribution
 
